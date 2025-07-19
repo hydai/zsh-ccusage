@@ -11,7 +11,7 @@ CCUSAGE_CACHE_DURATION=${CCUSAGE_UPDATE_INTERVAL:-300}
 
 # Use zsh's built-in $EPOCHSECONDS for performance
 # This avoids spawning external date processes
-zmodload -F zsh/datetime +EPOCHSECONDS 2>/dev/null || true
+zmodload zsh/datetime 2>/dev/null || true
 
 # Store data in cache with timestamp
 # Input: key, value
@@ -56,17 +56,27 @@ function ccusage_cache_get() {
 }
 
 # Clear all cache entries
-function ccusage_cache_clear() {
+function ccusage_cache_clear_all() {
     CCUSAGE_CACHE=()
     CCUSAGE_CACHE_TIME=()
 }
 
 # Clear specific cache entry
 # Input: key
-function ccusage_cache_remove() {
+function ccusage_cache_clear() {
     local key=$1
-    unset "CCUSAGE_CACHE[$key]"
-    unset "CCUSAGE_CACHE_TIME[$key]"
+    if [[ -n "$key" ]]; then
+        unset "CCUSAGE_CACHE[$key]"
+        unset "CCUSAGE_CACHE_TIME[$key]"
+    else
+        # No key provided, clear all
+        ccusage_cache_clear_all
+    fi
+}
+
+# Alias for backward compatibility
+function ccusage_cache_remove() {
+    ccusage_cache_clear "$1"
 }
 
 # Check if cache entry exists and is valid

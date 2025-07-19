@@ -10,7 +10,8 @@ typeset -g CCUSAGE_ASYNC_TMPDIR=""
 # Initialize async system
 function ccusage_async_init() {
     # Create temp directory for async results
-    CCUSAGE_ASYNC_TMPDIR="${TMPDIR:-/tmp}/zsh-ccusage-$$"
+    # Use a more stable identifier that persists across subshells
+    CCUSAGE_ASYNC_TMPDIR="${TMPDIR:-/tmp}/zsh-ccusage-${UID:-$(id -u)}-$$"
     mkdir -p "$CCUSAGE_ASYNC_TMPDIR"
     
     # Clean up on exit
@@ -132,12 +133,6 @@ function ccusage_async_process_results() {
     
     # Clear async PID
     CCUSAGE_ASYNC_PID=""
-    
-    # Trigger prompt redraw if in interactive shell
-    if [[ -o interactive ]] && (( $+functions[zle] )); then
-        # Force prompt refresh
-        zle && zle reset-prompt 2>/dev/null || true
-    fi
     
     return 0
 }

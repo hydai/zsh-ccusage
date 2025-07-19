@@ -104,6 +104,9 @@ function ccusage_display() {
     ccusage_format_display "$cost" "$percentage" "$is_stale"
 }
 
+# Track last displayed value for change detection
+typeset -g CCUSAGE_LAST_DISPLAY=""
+
 # Precmd hook for automatic updates
 function ccusage_precmd() {
     # Ensure components are loaded
@@ -162,14 +165,6 @@ function ccusage_init() {
     
     # Load components and trigger initial async update
     ccusage_load_components
-    
-    # Set initial default values in cache to avoid empty display
-    if ! ccusage_cache_valid "active_block"; then
-        ccusage_cache_set "active_block" '{"blocks":[]}'
-    fi
-    if ! ccusage_cache_valid "daily_usage"; then
-        ccusage_cache_set "daily_usage" '{"totals":{"totalCost":0}}'
-    fi
     
     # Trigger first async update immediately
     if [[ "${CCUSAGE_AUTO_UPDATE:-true}" == "true" ]]; then
