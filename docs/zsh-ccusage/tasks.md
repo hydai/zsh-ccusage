@@ -180,3 +180,108 @@
   - Include screenshots showing different modes and colors
   - Create migration guide from DAILY_LIMIT to PLAN_LIMIT
   - _Requirements: R6, R7, R8
+
+- [ ] 27. Add CCUSAGE_COST_MODE environment variable
+  - Add cost mode configuration with values: active (default), daily, monthly
+  - Implement ccusage_validate_cost_mode function
+  - Fall back to 'active' for invalid values
+  - Store validated mode in global variable
+  - _Requirements: R9, R11
+
+- [ ] 28. Update cost display to show mode suffix
+  - Modify ccusage_format_display to append cost mode suffix
+  - Show 'A' for active, 'D' for daily, 'M' for monthly
+  - Format as "$45.23A", "$20.45D", "$1800.00M"
+  - Ensure suffix appears before percentage separator
+  - _Requirements: R11
+
+- [ ] 29. Implement daily cost fetching for cost mode
+  - Add ccusage_fetch_daily_cost function
+  - Use npx ccusage@latest -s YYYYMMDD --json
+  - Auto-generate today's date in YYYYMMDD format
+  - Parse total cost from response
+  - _Requirements: R9
+
+- [ ] 30. Implement monthly cost fetching for cost mode
+  - Add ccusage_fetch_monthly_cost function
+  - Use npx ccusage@latest monthly -s YYYYMM01 --json
+  - Auto-generate current month's first day
+  - Parse total cost from response
+  - _Requirements: R9
+
+- [ ] 31. Create cost mode data router
+  - Implement ccusage_get_cost_by_mode function
+  - Route to appropriate fetcher based on CCUSAGE_COST_MODE
+  - Return cost value and mode indicator
+  - Handle errors per mode independently
+  - _Requirements: R9
+
+- [ ] 32. Add separate cache keys for cost modes
+  - Use mode-specific cache keys: cost_active, cost_daily, cost_monthly
+  - Cache each mode's data independently
+  - Maintain 5-minute TTL for all cost caches
+  - Prevent cache collision between modes
+  - _Requirements: R13
+
+- [ ] 33. Update async fetcher for parallel cost updates
+  - Modify ccusage_async_update to fetch all cost modes
+  - Run fetches in parallel using background jobs
+  - Update only expired caches
+  - Show current mode immediately while others update
+  - _Requirements: R13
+
+- [ ] 34. Implement ccusage-set-cost-mode command
+  - Create runtime mode switcher function
+  - Validate input mode (active, daily, monthly)
+  - Update CCUSAGE_COST_MODE for current session
+  - Show available modes when called without arguments
+  - _Requirements: R12
+
+- [ ] 35. Add cost mode error handling
+  - Show cached value with asterisk on API failure
+  - Display "$-.--MODE" when no cache available
+  - Continue showing other modes if one fails
+  - Log errors without disrupting prompt
+  - _Requirements: R14
+
+- [ ] 36. Test independent cost and percentage combinations
+  - Verify daily cost + monthly percentage shows "[$20.45D | 900%M]"
+  - Verify monthly cost + daily average shows "[$1800.00M | 310%D]"
+  - Test all 9 possible combinations (3 cost × 3 percentage)
+  - Ensure display format consistency
+  - _Requirements: R10
+
+- [ ] 37. Add persistent cache for cost modes
+  - Extend disk cache to store cost mode data
+  - Use mode-specific cache files
+  - Load from disk cache on shell startup
+  - Update disk cache alongside memory cache
+  - _Requirements: R13
+
+- [ ] 38. Update refresh command for all cost modes
+  - Modify ccusage-refresh to clear all cost caches
+  - Trigger parallel refresh of all modes
+  - Show progress indicator during refresh
+  - Update prompt with fresh data
+  - _Requirements: R13
+
+- [ ] 39. Optimize cost mode performance
+  - Only fetch current mode on regular updates
+  - Batch API calls when multiple modes expired
+  - Profile and ensure <100ms impact
+  - Test with slow network conditions
+  - _Requirements: Success Metrics
+
+- [ ] 40. Create test script for cost modes
+  - Write test_cost_modes.zsh similar to test_percentage_modes.zsh
+  - Test mode switching and validation
+  - Verify cache independence
+  - Check error handling scenarios
+  - _Requirements: R9, R12, R14
+
+- [ ] 41. Update documentation for cost display modes
+  - Document CCUSAGE_COST_MODE in README
+  - Add examples for each cost mode
+  - Show screenshots of different mode combinations
+  - Include ccusage-set-cost-mode usage
+  - _Requirements: R9, R10, R11, R12

@@ -229,6 +229,180 @@ Feature: Color-code percentage based on thresholds
     And use alternative indicators like brackets or asterisks
 ```
 
+## 9. Multiple Cost Display Modes
+
+As a developer
+I want to choose between different cost display modes
+So that I can monitor the cost metric most relevant to my workflow
+
+```gherkin
+Feature: Configure cost display modes
+
+  Scenario: Display active block cost (default)
+    Given CCUSAGE_COST_MODE is not set or set to "active"
+    When the prompt is rendered
+    Then it should fetch cost using "npx ccusage@latest blocks --active --json"
+    And display the cost with no suffix indicator
+    And cache the result separately from other modes
+
+  Scenario: Display daily total cost
+    Given I have set CCUSAGE_COST_MODE=daily
+    When the prompt is rendered
+    Then it should fetch cost using "npx ccusage@latest -s YYYYMMDD --json"
+    And display the cost with "D" suffix like "$20.45D"
+    And use today's date in YYYYMMDD format
+
+  Scenario: Display monthly total cost
+    Given I have set CCUSAGE_COST_MODE=monthly
+    When the prompt is rendered
+    Then it should fetch cost using "npx ccusage@latest monthly -s YYYYMM01 --json"
+    And display the cost with "M" suffix like "$1800.00M"
+    And use current month's first day in YYYYMM01 format
+```
+
+## 10. Independent Cost and Percentage Modes
+
+As a developer
+I want to combine any cost mode with any percentage mode
+So that I can create the monitoring view that best fits my needs
+
+```gherkin
+Feature: Combine cost and percentage modes independently
+
+  Scenario: Mix daily cost with monthly percentage
+    Given I have set CCUSAGE_COST_MODE=daily
+    And I have set CCUSAGE_PERCENTAGE_MODE=monthly
+    When the prompt is rendered
+    Then it should display daily cost with "D" suffix
+    And display monthly percentage with "M" suffix
+    And the display should show "[$20.45D | 900%M]"
+
+  Scenario: Mix monthly cost with daily average percentage
+    Given I have set CCUSAGE_COST_MODE=monthly
+    And I have set CCUSAGE_PERCENTAGE_MODE=daily_avg
+    When the prompt is rendered
+    Then it should display monthly cost with "M" suffix
+    And display daily average percentage with "D" suffix
+    And the display should show "[$1800.00M | 310%D]"
+```
+
+## 11. Cost Mode Suffix Display
+
+As a developer
+I want to always see which cost mode is active
+So that I can quickly understand what the displayed cost represents
+
+```gherkin
+Feature: Always show cost mode suffix
+
+  Scenario: Show suffix for active block mode
+    Given CCUSAGE_COST_MODE=active
+    When the prompt is rendered
+    Then the cost should be displayed with "A" suffix like "$45.23A"
+
+  Scenario: Show suffix for daily mode
+    Given CCUSAGE_COST_MODE=daily
+    When the prompt is rendered
+    Then the cost should be displayed with "D" suffix like "$20.45D"
+
+  Scenario: Show suffix for monthly mode
+    Given CCUSAGE_COST_MODE=monthly
+    When the prompt is rendered
+    Then the cost should be displayed with "M" suffix like "$1800.00M"
+```
+
+## 12. Runtime Cost Mode Switching
+
+As a developer
+I want to switch cost display modes without restarting my shell
+So that I can quickly check different cost metrics during my work session
+
+```gherkin
+Feature: Switch cost modes at runtime
+
+  Scenario: Switch mode using command
+    Given the plugin is loaded with default settings
+    When I run "ccusage-set-cost-mode daily"
+    Then CCUSAGE_COST_MODE should be updated to "daily"
+    And the next prompt refresh should show daily cost
+    And the change should persist for the current shell session
+
+  Scenario: Invalid mode reverts to default
+    Given the plugin is loaded
+    When I run "ccusage-set-cost-mode invalid"
+    Then it should display an error message
+    And keep the current mode unchanged
+
+  Scenario: List available modes
+    Given the plugin is loaded
+    When I run "ccusage-set-cost-mode" without arguments
+    Then it should display available modes: active, daily, monthly
+    And show the currently active mode
+```
+
+## 13. Separate Cache Management for Cost Modes
+
+As a developer
+I want each cost mode to have its own cache
+So that switching modes gives me fresh data without unnecessary API calls
+
+```gherkin
+Feature: Independent cache for each cost mode
+
+  Scenario: Cache different modes separately
+    Given I switch from active to daily mode
+    When the prompt refreshes
+    Then it should check the daily mode cache first
+    And only call the API if daily cache is expired
+    And not affect the active mode cache
+
+  Scenario: Parallel cache updates
+    Given all three cost mode caches are expired
+    When I manually refresh with ccusage-refresh
+    Then it should update all three caches in parallel
+    And show the current mode's value immediately
+    And have fresh data ready for mode switching
+
+  Scenario: Show stale cache indicator
+    Given the daily cost API call fails
+    And there is a cached daily value from 10 minutes ago
+    When the prompt is rendered in daily mode
+    Then it should display the cached value
+    And add an asterisk to indicate stale data like "$20.45D*"
+```
+
+## 14. Cost Mode Error Handling
+
+As a developer
+I want the plugin to handle mode-specific errors gracefully
+So that one failing API doesn't break my entire prompt
+
+```gherkin
+Feature: Handle cost mode API failures
+
+  Scenario: Fallback to cache on API failure
+    Given the monthly cost API call fails
+    And I'm in monthly cost mode
+    And there's a cached value
+    When the prompt is rendered
+    Then it should display the cached value with "*" suffix
+    And not show error messages in the prompt
+
+  Scenario: Show placeholder when no cache available
+    Given the daily cost API call fails
+    And I'm in daily cost mode
+    And there's no cached value
+    When the prompt is rendered
+    Then it should display "$-.--D" as placeholder
+    And retry on next prompt refresh
+
+  Scenario: Independent mode failures
+    Given the monthly API fails but daily API succeeds
+    When I switch from monthly to daily mode
+    Then daily mode should show fresh data
+    And switching back to monthly should show cached data with "*"
+```
+
 ## Technical Requirements
 
 - Use `npx ccusage@latest blocks --active --json` for active block cost
@@ -243,6 +417,7 @@ Feature: Color-code percentage based on thresholds
   - `CCUSAGE_DAILY_LIMIT` (default: 200) - deprecated, use CCUSAGE_PLAN_LIMIT
   - `CCUSAGE_PLAN_LIMIT` (default: 200) - monthly plan limit in USD
   - `CCUSAGE_PERCENTAGE_MODE` (daily_avg|daily_plan|monthly, default: daily_avg)
+  - `CCUSAGE_COST_MODE` (active|daily|monthly, default: active)
 
 ## Success Metrics
 
@@ -252,3 +427,7 @@ Feature: Color-code percentage based on thresholds
 - Clear visual indicators for different usage levels
 - Percentage calculations update synchronously with cost display
 - Support for different percentage calculation modes
+- Independent cost and percentage mode selection
+- Separate cache management for each cost mode
+- Runtime mode switching without shell restart
+- Clear visual indicators for cost mode (A/D/M suffixes)

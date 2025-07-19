@@ -11,6 +11,7 @@ CCUSAGE_PLUGIN_DIR="${0:A:h}"
 
 # Configuration variables with defaults
 : ${CCUSAGE_PERCENTAGE_MODE:="daily_avg"}  # daily_avg, daily_plan, or monthly
+: ${CCUSAGE_COST_MODE:="active"}           # active, daily, or monthly
 
 # Validate percentage mode configuration
 function ccusage_validate_percentage_mode() {
@@ -22,6 +23,20 @@ function ccusage_validate_percentage_mode() {
         *)
             # Invalid mode, fall back to default
             CCUSAGE_PERCENTAGE_MODE="daily_avg"
+            ;;
+    esac
+}
+
+# Validate cost mode configuration
+function ccusage_validate_cost_mode() {
+    local mode="${CCUSAGE_COST_MODE}"
+    case "$mode" in
+        active|daily|monthly)
+            # Valid mode, keep it
+            ;;
+        *)
+            # Invalid mode, fall back to default
+            CCUSAGE_COST_MODE="active"
             ;;
     esac
 }
@@ -199,6 +214,7 @@ function ccusage_precmd() {
 function ccusage_init() {
     # Validate configuration
     ccusage_validate_percentage_mode
+    ccusage_validate_cost_mode
     
     # Framework-specific initialization
     case "$CCUSAGE_FRAMEWORK" in
