@@ -40,14 +40,25 @@ function ccusage_display() {
     local cost percentage
     local cache_key_block="active_block"
     local cache_key_daily="daily_usage"
+    local is_stale=false
     
     # Try to get cached active block data
     local block_json=$(ccusage_cache_get "$cache_key_block")
     if [[ -z "$block_json" ]]; then
         # Cache miss - fetch fresh data
         block_json=$(ccusage_fetch_active_block)
-        # Cache the result if it's not an error
-        if [[ ! "$block_json" =~ '"error"' ]]; then
+        # Check if we got an error
+        if [[ "$block_json" =~ '"error"' ]]; then
+            # For network errors, try to use stale cache
+            if [[ "$block_json" =~ '"error_type"[[:space:]]*:[[:space:]]*"network"' ]]; then
+                local stale_block=$(ccusage_cache_get_stale "$cache_key_block")
+                if [[ -n "$stale_block" ]]; then
+                    block_json="$stale_block"
+                    is_stale=true
+                fi
+            fi
+        else
+            # Success - cache the fresh data
             ccusage_cache_set "$cache_key_block" "$block_json"
         fi
     fi
@@ -58,8 +69,18 @@ function ccusage_display() {
     if [[ -z "$daily_json" ]]; then
         # Cache miss - fetch fresh data
         daily_json=$(ccusage_fetch_daily)
-        # Cache the result if it's not an error
-        if [[ ! "$daily_json" =~ '"error"' ]]; then
+        # Check if we got an error
+        if [[ "$daily_json" =~ '"error"' ]]; then
+            # For network errors, try to use stale cache
+            if [[ "$daily_json" =~ '"error_type"[[:space:]]*:[[:space:]]*"network"' ]]; then
+                local stale_daily=$(ccusage_cache_get_stale "$cache_key_daily")
+                if [[ -n "$stale_daily" ]]; then
+                    daily_json="$stale_daily"
+                    is_stale=true
+                fi
+            fi
+        else
+            # Success - cache the fresh data
             ccusage_cache_set "$cache_key_daily" "$daily_json"
         fi
     fi
@@ -67,7 +88,7 @@ function ccusage_display() {
     percentage=$(ccusage_parse_daily_percentage "$daily_json" "$daily_limit")
     
     # Format and display the data
-    ccusage_format_display "$cost" "$percentage"
+    ccusage_format_display "$cost" "$percentage" "$is_stale"
 }
 
 # Precmd hook for automatic updates

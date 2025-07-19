@@ -91,3 +91,18 @@ function ccusage_cache_age() {
     local current_time=$(date +%s)
     echo $((current_time - cache_time))
 }
+
+# Get cached data regardless of age (for fallback during errors)
+# Input: key
+# Output: Cached value or empty string
+function ccusage_cache_get_stale() {
+    local key=$1
+    
+    # Return cached value if it exists, regardless of age
+    if [[ -n "${CCUSAGE_CACHE[$key]}" ]]; then
+        echo "${CCUSAGE_CACHE[$key]}"
+        return 0
+    fi
+    
+    return 1
+}
