@@ -9,6 +9,23 @@ CCUSAGE_VERSION="0.1.0"
 # Get plugin directory
 CCUSAGE_PLUGIN_DIR="${0:A:h}"
 
+# Configuration variables with defaults
+: ${CCUSAGE_PERCENTAGE_MODE:="daily_avg"}  # daily_avg, daily_plan, or monthly
+
+# Validate percentage mode configuration
+function ccusage_validate_percentage_mode() {
+    local mode="${CCUSAGE_PERCENTAGE_MODE}"
+    case "$mode" in
+        daily_avg|daily_plan|monthly)
+            # Valid mode, keep it
+            ;;
+        *)
+            # Invalid mode, fall back to default
+            CCUSAGE_PERCENTAGE_MODE="daily_avg"
+            ;;
+    esac
+}
+
 # Detect plugin manager / framework
 function ccusage_detect_framework() {
     if [[ -n "$ZSH_VERSION" ]]; then
@@ -140,6 +157,9 @@ function ccusage_precmd() {
 
 # Initialize plugin
 function ccusage_init() {
+    # Validate configuration
+    ccusage_validate_percentage_mode
+    
     # Framework-specific initialization
     case "$CCUSAGE_FRAMEWORK" in
         "oh-my-zsh")

@@ -110,3 +110,73 @@
   - Test with zinit plugin manager
   - Ensure proper loading in all environments
   - _Requirements: Deployment
+
+- [x] 17. Add percentage mode configuration support
+  - Add CCUSAGE_PERCENTAGE_MODE environment variable handling
+  - Support values: daily_avg (default), daily_plan, monthly
+  - Validate mode and fall back to daily_avg for invalid values
+  - Update configuration loading in plugin initialization
+  - _Requirements: R7
+
+- [ ] 18. Implement monthly usage fetching
+  - Add ccusage_fetch_monthly function in functions/ccusage-fetch
+  - Execute npx ccusage@latest monthly --json
+  - Cache monthly data separately with 5-minute TTL
+  - Handle errors and return cached data when available
+  - _Requirements: R6
+
+- [ ] 19. Create percentage calculation engine
+  - Implement ccusage_calculate_percentage function
+  - Support three calculation modes based on CCUSAGE_PERCENTAGE_MODE
+  - Add ccusage_get_days_in_month helper function
+  - Handle CCUSAGE_PLAN_LIMIT configuration (default: 200)
+  - _Requirements: R6, R7
+
+- [ ] 20. Update display formatter for percentage modes
+  - Modify ccusage_format_display to include mode indicator
+  - Display as XXX%D for daily_avg, XXX%P for daily_plan, XXX%M for monthly
+  - Maintain existing color coding based on percentage value
+  - Ensure backward compatibility with existing format
+  - _Requirements: R6, R8
+
+- [ ] 21. Enhance color coding for percentage thresholds
+  - Update color logic: <80% green, ≥80% yellow, ≥100% red
+  - Apply colors consistently across all percentage modes
+  - Add bold formatting for values ≥100%
+  - Test with terminals that don't support colors
+  - _Requirements: R8
+
+- [ ] 22. Update parser for new data requirements
+  - Modify ccusage_parse_daily_percentage to use configurable limit
+  - Add parsing for monthly usage JSON response
+  - Extract total cost from monthly data
+  - Handle missing or malformed monthly data
+  - _Requirements: R6
+
+- [ ] 23. Integrate percentage modes into async update flow
+  - Update ccusage_async_update to fetch monthly data when needed
+  - Only fetch monthly data for monthly mode to optimize performance
+  - Ensure all modes work with existing cache and async infrastructure
+  - Test mode switching without restart
+  - _Requirements: R6, R7
+
+- [ ] 24. Add CCUSAGE_PLAN_LIMIT configuration
+  - Replace CCUSAGE_DAILY_LIMIT with CCUSAGE_PLAN_LIMIT
+  - Maintain backward compatibility (DAILY_LIMIT falls back to PLAN_LIMIT)
+  - Update all percentage calculations to use PLAN_LIMIT
+  - Document migration in README
+  - _Requirements: R7
+
+- [ ] 25. Test percentage display with real data
+  - Verify daily_avg calculation: $20 usage, 31-day month = 310%D
+  - Verify daily_plan calculation: $100 usage, $200 limit = 50%P
+  - Verify monthly calculation: $1800 usage, $200 limit = 900%M
+  - Test edge cases: 0% usage, >999% usage
+  - _Requirements: R6
+
+- [ ] 26. Update documentation for percentage features
+  - Document new environment variables in README
+  - Add examples for each percentage mode
+  - Include screenshots showing different modes and colors
+  - Create migration guide from DAILY_LIMIT to PLAN_LIMIT
+  - _Requirements: R6, R7, R8

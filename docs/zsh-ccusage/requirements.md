@@ -114,12 +114,13 @@ So that I can quickly glance at my usage
 ```gherkin
 Feature: Format cost display in prompt
 
-  Scenario: Display format for costs under $100
+  Scenario: Display format with percentage
     Given the active block cost is $45.23
-    And the daily usage is 35%
+    And today's usage is $20 with daily average mode
+    And the calculated percentage is 310%
     When the prompt is rendered
-    Then it should display "[$45.23 | 35%]" in the right prompt
-    And use appropriate colors (green for low, yellow for medium, red for high)
+    Then it should display "[$45.23 | 310%D]" in the right prompt
+    And the percentage should be colored red (>100%)
 
   Scenario: Display format for high usage
     Given the daily usage is above 80%
@@ -129,21 +130,119 @@ Feature: Format cost display in prompt
 
   Scenario: Compact display for small terminals
     Given the terminal width is less than 80 columns
+    And the percentage mode is daily_avg showing 85%
     When the prompt is rendered
-    Then it should use a compact format like "$45.23|35%"
+    Then it should use a compact format like "$45.23|85%D"
+    And maintain color coding for the percentage
+```
+
+## 6. Configurable Usage Percentage Display
+
+As a developer with a usage plan
+I want to see my usage as a percentage of my plan limit
+So that I can better understand my spending relative to my budget
+
+```gherkin
+Feature: Display usage percentage with multiple calculation modes
+
+  Scenario: Show daily average usage percentage (default)
+    Given I have set my plan limit to $200
+    And today's usage is $20
+    And current month has 31 days
+    When the prompt is rendered
+    Then it should calculate percentage as: $20 / ($200/31) = 310%
+    And display it as "310%D" after the cost
+
+  Scenario: Show daily plan percentage
+    Given I have set CCUSAGE_PERCENTAGE_MODE=daily_plan
+    And today's usage is $100
+    And my plan limit is $200
+    When the prompt is rendered
+    Then it should calculate percentage as: $100 / $200 = 50%
+    And display it as "50%P"
+
+  Scenario: Show monthly usage percentage
+    Given I have set CCUSAGE_PERCENTAGE_MODE=monthly
+    And monthly usage is $1800
+    And my plan limit is $200
+    When the prompt is rendered
+    Then it should calculate percentage as: $1800 / $200 = 900%
+    And display it as "900%M"
+```
+
+## 7. Percentage Mode Configuration
+
+As a developer
+I want to configure which percentage calculation mode to use
+So that I can monitor usage in the way that's most relevant to me
+
+```gherkin
+Feature: Configure percentage calculation mode
+
+  Scenario: Use environment variable to set mode
+    Given I set CCUSAGE_PERCENTAGE_MODE=daily_avg
+    When the plugin loads
+    Then it should use daily average calculation
+
+  Scenario: Invalid mode falls back to default
+    Given I set CCUSAGE_PERCENTAGE_MODE=invalid_mode
+    When the plugin loads
+    Then it should use daily average calculation (default)
+    And not show error messages
+
+  Scenario: Configure custom plan limit
+    Given I set CCUSAGE_PLAN_LIMIT=500
+    When calculating any percentage
+    Then it should use $500 as the plan limit
+    And default to $200 if not set
+```
+
+## 8. Color-Coded Usage Warnings
+
+As a developer
+I want visual warnings based on my usage percentage
+So that I can quickly identify when I'm approaching or exceeding limits
+
+```gherkin
+Feature: Color-code percentage based on thresholds
+
+  Scenario: Low usage shows green
+    Given the calculated percentage is 50%
+    When the prompt is rendered
+    Then the percentage should be displayed in green color
+
+  Scenario: Medium usage shows yellow
+    Given the calculated percentage is 85%
+    When the prompt is rendered
+    Then the percentage should be displayed in yellow color
+
+  Scenario: High usage shows red
+    Given the calculated percentage is 150%
+    When the prompt is rendered
+    Then the percentage should be displayed in red color
+    And optionally use bold formatting for emphasis
+
+  Scenario: Maintain readability in different terminals
+    Given the terminal doesn't support colors
+    When the prompt is rendered
+    Then the percentage should still be readable
+    And use alternative indicators like brackets or asterisks
 ```
 
 ## Technical Requirements
 
 - Use `npx ccusage@latest blocks --active --json` for active block cost
 - Use `npx ccusage@latest daily -s YYYYMMDD --json` for daily totals
+- Use `npx ccusage@latest monthly --json` for monthly totals
 - Cache results to avoid excessive API calls
 - Support standard zsh theming variables
 - Provide configuration through environment variables:
   - `CCUSAGE_AUTO_UPDATE` (true/false)
   - `CCUSAGE_UPDATE_INTERVAL` (seconds)
   - `CCUSAGE_DISPLAY_FORMAT` (custom format string)
-  - `CCUSAGE_DAILY_LIMIT` (default: 200)
+  - `CCUSAGE_DAILY_LIMIT` (default: 200) - deprecated, use CCUSAGE_PLAN_LIMIT
+  - `CCUSAGE_PLAN_LIMIT` (default: 200) - monthly plan limit in USD
+  - `CCUSAGE_PERCENTAGE_MODE` (daily_avg|daily_plan|monthly, default: daily_avg)
 
 ## Success Metrics
 
@@ -151,3 +250,5 @@ Feature: Format cost display in prompt
 - Cost information updates within 1 second of command execution
 - No disruption to normal terminal usage when ccusage is unavailable
 - Clear visual indicators for different usage levels
+- Percentage calculations update synchronously with cost display
+- Support for different percentage calculation modes
