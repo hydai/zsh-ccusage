@@ -153,8 +153,10 @@ function ccusage_display() {
         return
     fi
     
-    # Parse the data
-    cost=$(ccusage_parse_block_cost "$block_json")
+    # Get cost based on configured cost mode
+    local cost_info=($(ccusage_get_cost_by_mode))
+    cost="${cost_info[1]}"
+    local cost_mode_suffix="${cost_info[2]}"
     
     # Calculate percentage based on mode
     local mode="${CCUSAGE_PERCENTAGE_MODE:-daily_avg}"

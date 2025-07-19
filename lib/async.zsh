@@ -32,6 +32,7 @@ function ccusage_async_update() {
     export CCUSAGE_ASYNC_TMPDIR
     export CCUSAGE_PLUGIN_DIR
     export CCUSAGE_PERCENTAGE_MODE
+    export CCUSAGE_COST_MODE
     
     # Disable job control notifications for this subshell
     setopt local_options no_notify no_monitor
@@ -46,10 +47,13 @@ function ccusage_async_update() {
         local block_file="$CCUSAGE_ASYNC_TMPDIR/block.json"
         local daily_file="$CCUSAGE_ASYNC_TMPDIR/daily.json"
         local monthly_file="$CCUSAGE_ASYNC_TMPDIR/monthly.json"
+        local cost_active_file="$CCUSAGE_ASYNC_TMPDIR/cost_active.json"
+        local cost_daily_file="$CCUSAGE_ASYNC_TMPDIR/cost_daily.json"
+        local cost_monthly_file="$CCUSAGE_ASYNC_TMPDIR/cost_monthly.json"
         local status_file="$CCUSAGE_ASYNC_TMPDIR/status"
         
         # Clear previous results
-        rm -f "$block_file" "$daily_file" "$monthly_file" "$status_file" 2>/dev/null
+        rm -f "$block_file" "$daily_file" "$monthly_file" "$cost_active_file" "$cost_daily_file" "$cost_monthly_file" "$status_file" 2>/dev/null
         
         # Fetch active block data
         local block_json=$(ccusage_fetch_active_block 2>/dev/null)
@@ -66,6 +70,58 @@ function ccusage_async_update() {
             monthly_json=$(ccusage_fetch_monthly 2>/dev/null)
             monthly_success=$?
         fi
+        
+        # Fetch cost data for all modes (only expired caches)
+        local today=$(date '+%Y%m%d')
+        local current_month=$(date '+%Y%m')
+        
+        # Check which cost mode caches need updating
+        local fetch_cost_active=false
+        local fetch_cost_daily=false
+        local fetch_cost_monthly=false
+        
+        if ! ccusage_cache_valid "cost_active"; then
+            fetch_cost_active=true
+        fi
+        
+        if ! ccusage_cache_valid "cost_daily_${today}"; then
+            fetch_cost_daily=true
+        fi
+        
+        if ! ccusage_cache_valid "cost_monthly_${current_month}"; then
+            fetch_cost_monthly=true
+        fi
+        
+        # Fetch cost mode data in parallel using subshells
+        if [[ "$fetch_cost_active" == "true" ]]; then
+            (
+                local cost_active_json=$(ccusage_fetch_active_block 2>/dev/null)
+                if [[ $? -eq 0 && -n "$cost_active_json" ]]; then
+                    echo "$cost_active_json" > "$cost_active_file" 2>/dev/null
+                fi
+            ) &
+        fi
+        
+        if [[ "$fetch_cost_daily" == "true" ]]; then
+            (
+                local cost_daily_json=$(ccusage_fetch_daily_cost 2>/dev/null)
+                if [[ $? -eq 0 && -n "$cost_daily_json" ]]; then
+                    echo "$cost_daily_json" > "$cost_daily_file" 2>/dev/null
+                fi
+            ) &
+        fi
+        
+        if [[ "$fetch_cost_monthly" == "true" ]]; then
+            (
+                local cost_monthly_json=$(ccusage_fetch_monthly_cost 2>/dev/null)
+                if [[ $? -eq 0 && -n "$cost_monthly_json" ]]; then
+                    echo "$cost_monthly_json" > "$cost_monthly_file" 2>/dev/null
+                fi
+            ) &
+        fi
+        
+        # Wait for all parallel fetches to complete
+        wait
         
         # Write results to files
         if [[ $block_success -eq 0 && -n "$block_json" ]]; then
@@ -117,8 +173,14 @@ function ccusage_async_check_needed() {
         monthly_valid=$(ccusage_cache_valid "monthly_usage_${current_month}" && echo 1 || echo 0)
     fi
     
+    # Check cost mode caches
+    local cost_active_valid=$(ccusage_cache_valid "cost_active" && echo 1 || echo 0)
+    local cost_daily_valid=$(ccusage_cache_valid "cost_daily_${today}" && echo 1 || echo 0)
+    local cost_monthly_valid=$(ccusage_cache_valid "cost_monthly_${current_month}" && echo 1 || echo 0)
+    
     # Return 0 if update needed, 1 if cache is still fresh
-    if [[ $block_valid -eq 0 || $daily_valid -eq 0 || $monthly_valid -eq 0 ]]; then
+    if [[ $block_valid -eq 0 || $daily_valid -eq 0 || $monthly_valid -eq 0 || 
+          $cost_active_valid -eq 0 || $cost_daily_valid -eq 0 || $cost_monthly_valid -eq 0 ]]; then
         return 0
     else
         return 1
@@ -137,6 +199,9 @@ function ccusage_async_process_results() {
     local block_file="$CCUSAGE_ASYNC_TMPDIR/block.json"
     local daily_file="$CCUSAGE_ASYNC_TMPDIR/daily.json"
     local monthly_file="$CCUSAGE_ASYNC_TMPDIR/monthly.json"
+    local cost_active_file="$CCUSAGE_ASYNC_TMPDIR/cost_active.json"
+    local cost_daily_file="$CCUSAGE_ASYNC_TMPDIR/cost_daily.json"
+    local cost_monthly_file="$CCUSAGE_ASYNC_TMPDIR/cost_monthly.json"
     
     # Generate date-based cache keys
     local today=$(date '+%Y%m%d')
@@ -164,8 +229,30 @@ function ccusage_async_process_results() {
         fi
     fi
     
+    # Update cost mode caches
+    if [[ -f "$cost_active_file" ]]; then
+        local cached_cost_active=$(<"$cost_active_file")
+        if [[ -n "$cached_cost_active" && ! "$cached_cost_active" =~ '"error"' ]]; then
+            ccusage_cache_set "cost_active" "$cached_cost_active"
+        fi
+    fi
+    
+    if [[ -f "$cost_daily_file" ]]; then
+        local cached_cost_daily=$(<"$cost_daily_file")
+        if [[ -n "$cached_cost_daily" && ! "$cached_cost_daily" =~ '"error"' ]]; then
+            ccusage_cache_set "cost_daily_${today}" "$cached_cost_daily"
+        fi
+    fi
+    
+    if [[ -f "$cost_monthly_file" ]]; then
+        local cached_cost_monthly=$(<"$cost_monthly_file")
+        if [[ -n "$cached_cost_monthly" && ! "$cached_cost_monthly" =~ '"error"' ]]; then
+            ccusage_cache_set "cost_monthly_${current_month}" "$cached_cost_monthly"
+        fi
+    fi
+    
     # Clean up temp files
-    rm -f "$block_file" "$daily_file" "$monthly_file" "$status_file"
+    rm -f "$block_file" "$daily_file" "$monthly_file" "$cost_active_file" "$cost_daily_file" "$cost_monthly_file" "$status_file"
     
     # Clear async PID
     CCUSAGE_ASYNC_PID=""

@@ -7,6 +7,11 @@
 function ccusage-refresh() {
     echo "Refreshing ccusage data..."
     
+    # Ensure async system is initialized
+    if [[ -z "$CCUSAGE_ASYNC_TMPDIR" ]]; then
+        ccusage_async_init
+    fi
+    
     # Cancel any running async job
     ccusage_async_cancel
     
@@ -50,6 +55,7 @@ if [[ "${ZSH_EVAL_CONTEXT}" == "toplevel" && "$0" == *ccusage-refresh* ]]; then
     fi
     if ! command -v ccusage_async_cancel &> /dev/null; then
         source "${plugin_dir}/lib/async.zsh"
+        ccusage_async_init
     fi
     if ! command -v ccusage_display &> /dev/null; then
         source "${plugin_dir}/zsh-ccusage.plugin.zsh"
