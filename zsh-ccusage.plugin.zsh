@@ -73,17 +73,18 @@ function ccusage_display() {
     
     # Try to get cached active block data (never fetch synchronously)
     local block_json=$(ccusage_cache_get "$cache_key_block")
+    local has_data=false
+    
     if [[ -z "$block_json" ]]; then
         # No cached data - try stale cache
         block_json=$(ccusage_cache_get_stale "$cache_key_block")
         if [[ -n "$block_json" ]]; then
             is_stale=true
-        else
-            # No data at all - use default
-            block_json='{"blocks":[]}'
+            has_data=true
         fi
+    else
+        has_data=true
     fi
-    cost=$(ccusage_parse_block_cost "$block_json")
     
     # Try to get cached daily usage data (never fetch synchronously)
     local daily_json=$(ccusage_cache_get "$cache_key_daily")
@@ -92,11 +93,20 @@ function ccusage_display() {
         daily_json=$(ccusage_cache_get_stale "$cache_key_daily")
         if [[ -n "$daily_json" ]]; then
             is_stale=true
-        else
-            # No data at all - use default
-            daily_json='{"totals":{"totalCost":0}}'
+            has_data=true
         fi
+    else
+        has_data=true
     fi
+    
+    # If no data at all, return loading indicator
+    if [[ "$has_data" == "false" ]]; then
+        echo -n "[Loading...]"
+        return
+    fi
+    
+    # Parse the data
+    cost=$(ccusage_parse_block_cost "$block_json")
     local daily_limit=${CCUSAGE_DAILY_LIMIT:-200}
     percentage=$(ccusage_parse_daily_percentage "$daily_json" "$daily_limit")
     

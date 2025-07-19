@@ -13,17 +13,21 @@ CCUSAGE_CACHE_DURATION=${CCUSAGE_UPDATE_INTERVAL:-30}
 # This avoids spawning external date processes
 zmodload zsh/datetime 2>/dev/null || true
 
+# Source persistent cache functionality
+source "${0:A:h}/persistent-cache.zsh"
+
 # Store data in cache with timestamp
 # Input: key, value
 function ccusage_cache_set() {
     local key=$1
     local value=$2
     
-    # Store the value
+    # Store in memory cache
     CCUSAGE_CACHE[$key]=$value
-    
-    # Store current timestamp using built-in EPOCHSECONDS
     CCUSAGE_CACHE_TIME[$key]=$EPOCHSECONDS
+    
+    # Also store in persistent cache
+    ccusage_persistent_set "$key" "$value"
 }
 
 # Retrieve cached data if still valid
@@ -33,32 +37,40 @@ function ccusage_cache_get() {
     local key=$1
     local max_age=${2:-$CCUSAGE_CACHE_DURATION}
     
-    # Check if key exists
-    if [[ -z "${CCUSAGE_CACHE[$key]}" ]]; then
-        return 1
+    # First check memory cache
+    if [[ -n "${CCUSAGE_CACHE[$key]}" ]]; then
+        local cache_time=${CCUSAGE_CACHE_TIME[$key]:-0}
+        local current_time=$EPOCHSECONDS
+        local age=$((current_time - cache_time))
+        
+        if (( age <= max_age )); then
+            echo "${CCUSAGE_CACHE[$key]}"
+            return 0
+        else
+            # Memory cache is stale, remove it
+            unset "CCUSAGE_CACHE[$key]"
+            unset "CCUSAGE_CACHE_TIME[$key]"
+        fi
     fi
     
-    # Get cache timestamp
-    local cache_time=${CCUSAGE_CACHE_TIME[$key]:-0}
-    local current_time=$EPOCHSECONDS
-    local age=$((current_time - cache_time))
-    
-    # Check if cache is still fresh
-    if (( age <= max_age )); then
-        echo "${CCUSAGE_CACHE[$key]}"
+    # Try persistent cache
+    local persistent_value=$(ccusage_persistent_get "$key" "$max_age")
+    if [[ -n "$persistent_value" ]]; then
+        # Load into memory cache for faster access
+        CCUSAGE_CACHE[$key]=$persistent_value
+        CCUSAGE_CACHE_TIME[$key]=$EPOCHSECONDS
+        echo "$persistent_value"
         return 0
-    else
-        # Cache is stale, remove it
-        unset "CCUSAGE_CACHE[$key]"
-        unset "CCUSAGE_CACHE_TIME[$key]"
-        return 1
     fi
+    
+    return 1
 }
 
 # Clear all cache entries
 function ccusage_cache_clear_all() {
     CCUSAGE_CACHE=()
     CCUSAGE_CACHE_TIME=()
+    ccusage_persistent_clear_all
 }
 
 # Clear specific cache entry
@@ -68,6 +80,7 @@ function ccusage_cache_clear() {
     if [[ -n "$key" ]]; then
         unset "CCUSAGE_CACHE[$key]"
         unset "CCUSAGE_CACHE_TIME[$key]"
+        ccusage_persistent_clear "$key"
     else
         # No key provided, clear all
         ccusage_cache_clear_all
@@ -112,9 +125,16 @@ function ccusage_cache_age() {
 function ccusage_cache_get_stale() {
     local key=$1
     
-    # Return cached value if it exists, regardless of age
+    # First check memory cache
     if [[ -n "${CCUSAGE_CACHE[$key]}" ]]; then
         echo "${CCUSAGE_CACHE[$key]}"
+        return 0
+    fi
+    
+    # Try persistent cache (stale)
+    local persistent_value=$(ccusage_persistent_get_stale "$key")
+    if [[ -n "$persistent_value" ]]; then
+        echo "$persistent_value"
         return 0
     fi
     
