@@ -160,7 +160,7 @@
   - Test mode switching without restart
   - _Requirements: R6, R7
 
-- [ ] 24. Add CCUSAGE_PLAN_LIMIT configuration
+- [x] 24. Add CCUSAGE_PLAN_LIMIT configuration
   - Replace CCUSAGE_DAILY_LIMIT with CCUSAGE_PLAN_LIMIT
   - Maintain backward compatibility (DAILY_LIMIT falls back to PLAN_LIMIT)
   - Update all percentage calculations to use PLAN_LIMIT

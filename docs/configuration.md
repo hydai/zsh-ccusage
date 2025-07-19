@@ -15,8 +15,12 @@ The following environment variables can be used to configure the plugin:
 - `CCUSAGE_DISPLAY_FORMAT` (default: `"[$cost | $percentage%]"`)
   - Custom display format string
 
-- `CCUSAGE_DAILY_LIMIT` (default: `200`)
-  - Daily spending limit in USD (deprecated, use CCUSAGE_PLAN_LIMIT)
+- `CCUSAGE_PLAN_LIMIT` (default: `200`)
+  - Monthly plan limit in USD for percentage calculations
+  
+- `CCUSAGE_DAILY_LIMIT` (deprecated)
+  - Legacy configuration, use CCUSAGE_PLAN_LIMIT instead
+  - If set, will be used as fallback when CCUSAGE_PLAN_LIMIT is not configured
 
 ### Percentage Mode Configuration
 

@@ -98,9 +98,28 @@ The plugin can be configured using environment variables. Add these to your `.zs
 |----------|---------|-------------|
 | `CCUSAGE_AUTO_UPDATE` | `true` | Enable/disable automatic updates on each command |
 | `CCUSAGE_UPDATE_INTERVAL` | `30` | Cache duration in seconds (30 seconds) |
-| `CCUSAGE_DAILY_LIMIT` | `200` | Daily cost limit in dollars for percentage calculation |
+| `CCUSAGE_PLAN_LIMIT` | `200` | Monthly plan limit in USD for percentage calculations |
+| `CCUSAGE_PERCENTAGE_MODE` | `daily_avg` | Percentage calculation mode (see below) |
 | `CCUSAGE_DISPLAY_FORMAT` | `[$%.2f \| %d%%]` | Custom display format (printf-style) |
 | `CCUSAGE_CACHE_DIR` | `$HOME/.cache/zsh-ccusage` | Directory for cache files |
+
+### Percentage Modes
+
+The `CCUSAGE_PERCENTAGE_MODE` variable controls how the usage percentage is calculated:
+
+- **`daily_avg`** (default): Compares today's usage against the daily average of your monthly plan
+  - Formula: `today's usage / (plan limit / days in month) * 100`
+  - Example: $20 today with $200 plan in 31-day month = 310%D
+  
+- **`daily_plan`**: Compares today's usage against your full monthly plan limit
+  - Formula: `today's usage / plan limit * 100`
+  - Example: $100 today with $200 plan = 50%P
+  
+- **`monthly`**: Compares total monthly usage against your plan limit
+  - Formula: `monthly usage / plan limit * 100`
+  - Example: $1800 this month with $200 plan = 900%M
+
+The mode indicator (D/P/M) is displayed after the percentage to show which calculation is being used.
 
 ### Example Configuration
 
@@ -111,8 +130,11 @@ export CCUSAGE_AUTO_UPDATE=false
 # Update every 2 minutes (default is 30 seconds)
 export CCUSAGE_UPDATE_INTERVAL=120
 
-# Set daily limit to $100
-export CCUSAGE_DAILY_LIMIT=100
+# Set monthly plan limit to $100
+export CCUSAGE_PLAN_LIMIT=100
+
+# Use daily plan percentage mode
+export CCUSAGE_PERCENTAGE_MODE=daily_plan
 
 # Custom display format
 export CCUSAGE_DISPLAY_FORMAT="AI: $%.2f (%d%%)"
@@ -139,7 +161,7 @@ ccusage-refresh
 The plugin shows information in the format: `[cost | percentage]`
 
 - **Cost**: Current active block cost (e.g., $45.23)
-- **Percentage**: Daily usage as percentage of limit (e.g., 35%)
+- **Percentage**: Usage percentage based on configured mode (e.g., 35%D, 50%P, 900%M)
 
 #### Display States
 
@@ -150,9 +172,9 @@ The plugin shows information in the format: `[cost | percentage]`
 
 #### Color Coding
 
-- 🟢 **Green**: 0-50% of daily limit
-- 🟡 **Yellow**: 50-80% of daily limit
-- 🔴 **Red**: 80%+ of daily limit (may blink/bold)
+- 🟢 **Green**: <80% of limit
+- 🟡 **Yellow**: ≥80% of limit
+- 🔴 **Red**: ≥100% of limit (may use bold formatting)
 
 ## Troubleshooting
 
