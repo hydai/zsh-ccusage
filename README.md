@@ -9,13 +9,31 @@ A lightweight ZSH plugin that displays real-time AI usage costs from the `ccusag
 
 The zsh-ccusage plugin helps developers monitor their AI usage costs in real-time by displaying the current active block cost and daily usage percentage in the terminal prompt. It prevents exceeding block limits by providing visual feedback with color-coded indicators.
 
-**Example display**: `[$45.23 | 35%]`
+### Display Examples
+
+| Mode | Display | Description |
+|------|---------|-------------|
+| Daily Average | `[$45.23 | 35%D]` | Currently at 35% of daily budget |
+| Daily Plan | `[$45.23 | 22%P]` | Used 22% of monthly plan today |
+| Monthly | `[$45.23 | 185%M]` | At 185% of monthly plan limit |
+
+### Visual Examples
+
+The plugin provides different visual states based on your usage:
+
+```
+[$12.50 | 45%D]   # Green - Well within daily average
+[$22.00 | 85%P]   # Yellow - Approaching limit warning
+[$180.00 | 120%M] # Red/Bold - Exceeded monthly limit
+[$22.00* | 85%*]  # Asterisk - Using cached data
+$12.50|45%        # Compact - For narrow terminals
+```
 
 ## Features
 
 - 🚀 **Real-time cost display** - Shows current active block cost
-- 📊 **Daily usage tracking** - Displays usage as percentage of daily limit
-- 🎨 **Color-coded indicators** - Green (0-50%), Yellow (50-80%), Red (80%+)
+- 📊 **Multiple percentage modes** - Daily average, daily plan, or monthly tracking
+- 🎨 **Color-coded indicators** - Green (<80%), Yellow (80-99%), Red (≥100%)
 - ⚡ **Async updates** - Non-blocking data fetching
 - 💾 **Smart caching** - Reduces API calls with intelligent cache management
 - 🔧 **Highly configurable** - Customize display format, update intervals, and limits
@@ -102,6 +120,7 @@ The plugin can be configured using environment variables. Add these to your `.zs
 | `CCUSAGE_PERCENTAGE_MODE` | `daily_avg` | Percentage calculation mode (see below) |
 | `CCUSAGE_DISPLAY_FORMAT` | `[$%.2f \| %d%%]` | Custom display format (printf-style) |
 | `CCUSAGE_CACHE_DIR` | `$HOME/.cache/zsh-ccusage` | Directory for cache files |
+| `CCUSAGE_DAILY_LIMIT` | - | **Deprecated** - Use `CCUSAGE_PLAN_LIMIT` instead |
 
 ### Percentage Modes
 
@@ -110,37 +129,95 @@ The `CCUSAGE_PERCENTAGE_MODE` variable controls how the usage percentage is calc
 - **`daily_avg`** (default): Compares today's usage against the daily average of your monthly plan
   - Formula: `today's usage / (plan limit / days in month) * 100`
   - Example: $20 today with $200 plan in 31-day month = 310%D
+  - Use case: Best for tracking if you're on pace to stay within monthly budget
   
 - **`daily_plan`**: Compares today's usage against your full monthly plan limit
   - Formula: `today's usage / plan limit * 100`
   - Example: $100 today with $200 plan = 50%P
+  - Use case: Shows how much of your total monthly budget you've used today
   
 - **`monthly`**: Compares total monthly usage against your plan limit
   - Formula: `monthly usage / plan limit * 100`
   - Example: $1800 this month with $200 plan = 900%M
+  - Use case: Shows your actual monthly usage vs plan limit
 
 The mode indicator (D/P/M) is displayed after the percentage to show which calculation is being used.
+
+#### Percentage Mode Examples
+
+```bash
+# Example 1: Developer with $200/month plan
+# Current date: Day 15 of a 30-day month
+# Today's usage: $20
+# Monthly usage so far: $150
+
+# daily_avg mode (default)
+export CCUSAGE_PERCENTAGE_MODE=daily_avg
+# Display: [$20.00 | 300%D]
+# Calculation: $20 / ($200/30) = $20 / $6.67 = 300%
+
+# daily_plan mode
+export CCUSAGE_PERCENTAGE_MODE=daily_plan
+# Display: [$20.00 | 10%P]
+# Calculation: $20 / $200 = 10%
+
+# monthly mode
+export CCUSAGE_PERCENTAGE_MODE=monthly
+# Display: [$20.00 | 75%M]
+# Calculation: $150 / $200 = 75%
+```
 
 ### Example Configuration
 
 ```bash
-# Disable automatic updates
-export CCUSAGE_AUTO_UPDATE=false
-
-# Update every 2 minutes (default is 30 seconds)
-export CCUSAGE_UPDATE_INTERVAL=120
-
-# Set monthly plan limit to $100
-export CCUSAGE_PLAN_LIMIT=100
-
-# Use daily plan percentage mode
-export CCUSAGE_PERCENTAGE_MODE=daily_plan
-
-# Custom display format
-export CCUSAGE_DISPLAY_FORMAT="AI: $%.2f (%d%%)"
-
-# Source the plugin
+# Basic Configuration - Track daily average usage
+export CCUSAGE_PLAN_LIMIT=200
+export CCUSAGE_PERCENTAGE_MODE=daily_avg
 source ~/zsh-ccusage/zsh-ccusage.plugin.zsh
+
+# Advanced Configuration - Monitor monthly total
+export CCUSAGE_AUTO_UPDATE=true
+export CCUSAGE_UPDATE_INTERVAL=60
+export CCUSAGE_PLAN_LIMIT=500
+export CCUSAGE_PERCENTAGE_MODE=monthly
+export CCUSAGE_DISPLAY_FORMAT="AI: $%.2f (%d%%M)"
+source ~/zsh-ccusage/zsh-ccusage.plugin.zsh
+
+# Minimal Configuration - Manual updates only
+export CCUSAGE_AUTO_UPDATE=false
+export CCUSAGE_PERCENTAGE_MODE=daily_plan
+source ~/zsh-ccusage/zsh-ccusage.plugin.zsh
+
+# Team Configuration - Shared high limit
+export CCUSAGE_PLAN_LIMIT=2000
+export CCUSAGE_PERCENTAGE_MODE=monthly
+export CCUSAGE_UPDATE_INTERVAL=300  # Update every 5 minutes
+source ~/zsh-ccusage/zsh-ccusage.plugin.zsh
+```
+
+#### Configuration by Use Case
+
+**For Individual Developers:**
+```bash
+# Track if you're on pace for your monthly budget
+export CCUSAGE_PERCENTAGE_MODE=daily_avg
+export CCUSAGE_PLAN_LIMIT=200
+```
+
+**For Heavy Users:**
+```bash
+# Monitor total monthly usage closely
+export CCUSAGE_PERCENTAGE_MODE=monthly
+export CCUSAGE_PLAN_LIMIT=1000
+export CCUSAGE_UPDATE_INTERVAL=30  # Frequent updates
+```
+
+**For Occasional Users:**
+```bash
+# See daily usage as portion of monthly plan
+export CCUSAGE_PERCENTAGE_MODE=daily_plan
+export CCUSAGE_PLAN_LIMIT=100
+export CCUSAGE_AUTO_UPDATE=false  # Update manually
 ```
 
 ## Usage
@@ -172,9 +249,93 @@ The plugin shows information in the format: `[cost | percentage]`
 
 #### Color Coding
 
-- 🟢 **Green**: <80% of limit
-- 🟡 **Yellow**: ≥80% of limit
-- 🔴 **Red**: ≥100% of limit (may use bold formatting)
+The plugin uses color coding to provide visual warnings about your usage:
+
+- 🟢 **Green**: 0-79% of limit - Safe usage level
+- 🟡 **Yellow**: 80-99% of limit - Approaching limit
+- 🔴 **Red**: ≥100% of limit - Exceeded limit (may use bold formatting)
+
+**Color Examples by Mode:**
+
+```bash
+# Daily Average Mode (daily_avg)
+[$5.00 | 75%D]   # Green - On track for the month
+[$6.00 | 90%D]   # Yellow - Slightly above daily average
+[$10.00 | 150%D] # Red - Significantly over daily average
+
+# Daily Plan Mode (daily_plan)
+[$150.00 | 75%P]  # Green - Used 75% of monthly plan today
+[$170.00 | 85%P]  # Yellow - High daily usage
+[$250.00 | 125%P] # Red - Exceeded monthly plan in one day
+
+# Monthly Mode (monthly)
+[$150.00 | 75%M]  # Green - 75% of monthly plan used
+[$170.00 | 85%M]  # Yellow - Approaching monthly limit
+[$250.00 | 125%M] # Red - Exceeded monthly plan
+```
+
+## Migration Guide
+
+### Migrating from CCUSAGE_DAILY_LIMIT to CCUSAGE_PLAN_LIMIT
+
+If you were using the older `CCUSAGE_DAILY_LIMIT` variable, you'll need to update your configuration:
+
+**Old Configuration:**
+```bash
+export CCUSAGE_DAILY_LIMIT=200  # This is deprecated
+```
+
+**New Configuration:**
+```bash
+export CCUSAGE_PLAN_LIMIT=200   # Use this instead
+```
+
+The plugin maintains backward compatibility, so `CCUSAGE_DAILY_LIMIT` will still work but will show a deprecation warning. The new `CCUSAGE_PLAN_LIMIT` better reflects that this is your monthly plan limit, not a daily limit.
+
+### Understanding the Change
+
+- `CCUSAGE_DAILY_LIMIT` was misleading as it actually represented your monthly plan limit
+- `CCUSAGE_PLAN_LIMIT` clearly indicates this is your monthly plan amount
+- All percentage calculations now reference "plan limit" instead of "daily limit"
+- The default value remains $200
+
+### Quick Migration Steps
+
+1. Open your `.zshrc` file
+2. Find any line with `export CCUSAGE_DAILY_LIMIT=`
+3. Replace `CCUSAGE_DAILY_LIMIT` with `CCUSAGE_PLAN_LIMIT`
+4. Save and reload your shell: `source ~/.zshrc`
+
+## Frequently Asked Questions
+
+### Which percentage mode should I use?
+
+- **Use `daily_avg`** if you want to know whether you're on track to stay within your monthly budget
+- **Use `daily_plan`** if you want to see how much of your total monthly allowance you've used today
+- **Use `monthly`** if you want to track your cumulative monthly usage against your limit
+
+### Why is my percentage over 100%?
+
+This is normal and indicates you've exceeded the threshold for that mode:
+- **Over 100%D**: You've used more than your daily average budget
+- **Over 100%P**: You've used more than your entire monthly plan in one day
+- **Over 100%M**: You've exceeded your monthly plan limit
+
+### Can I use different limits for different projects?
+
+Yes! You can set `CCUSAGE_PLAN_LIMIT` differently in each project's directory using tools like direnv or by sourcing project-specific configuration files.
+
+### How do I disable the percentage display?
+
+You can customize the display format to show only the cost:
+```bash
+export CCUSAGE_DISPLAY_FORMAT="[$%.2f]"
+```
+
+### What's the difference between cached data (*) and live data?
+
+- **Live data**: Fresh data fetched from the ccusage API
+- **Cached data (*)**: Previously fetched data shown when the cache is still valid or when the API is unavailable
 
 ## Troubleshooting
 
