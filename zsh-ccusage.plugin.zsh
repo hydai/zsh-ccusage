@@ -9,8 +9,10 @@ CCUSAGE_VERSION="0.1.0"
 # Get plugin directory
 CCUSAGE_PLUGIN_DIR="${0:A:h}"
 
-# Source formatting function
+# Source all required components
 source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-format"
+source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-fetch"
+source "${CCUSAGE_PLUGIN_DIR}/lib/parser.zsh"
 
 # Initialize plugin
 function ccusage_init() {
@@ -23,11 +25,16 @@ function ccusage_init() {
 
 # Display function - returns formatted cost information
 function ccusage_display() {
-    # For now, use hardcoded values with formatting
-    local cost="0.00"
-    local percentage="0"
+    # Fetch active block data
+    local block_json=$(ccusage_fetch_active_block)
+    local cost=$(ccusage_parse_block_cost "$block_json")
     
-    # Use the formatting function with color support
+    # Fetch daily usage data
+    local daily_json=$(ccusage_fetch_daily)
+    local daily_limit=${CCUSAGE_DAILY_LIMIT:-200}
+    local percentage=$(ccusage_parse_daily_percentage "$daily_json" "$daily_limit")
+    
+    # Format and display the data
     ccusage_format_display "$cost" "$percentage"
 }
 
