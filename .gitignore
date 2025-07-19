@@ -1,0 +1,28 @@
+# Backup files
+*_original.*
+*.backup
+*.bak
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Test files
+test-output/
+coverage/
+
+# Cache files
+.cache/
+*.cache
