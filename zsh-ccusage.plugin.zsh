@@ -15,9 +15,13 @@ source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-fetch"
 source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-refresh"
 source "${CCUSAGE_PLUGIN_DIR}/lib/parser.zsh"
 source "${CCUSAGE_PLUGIN_DIR}/lib/cache.zsh"
+source "${CCUSAGE_PLUGIN_DIR}/lib/async.zsh"
 
 # Initialize plugin
 function ccusage_init() {
+    # Initialize async system
+    ccusage_async_init
+    
     # Set default display if not already in RPROMPT
     if [[ ! "$RPROMPT" =~ "ccusage_display" ]]; then
         # Add ccusage display to the left of existing RPROMPT content
@@ -73,8 +77,14 @@ function ccusage_precmd() {
     
     # Only trigger update if auto-update is enabled
     if [[ "$auto_update" == "true" ]]; then
-        # Force cache refresh by clearing cache entries
-        ccusage_cache_clear
+        # First, check if there are async results to process
+        ccusage_async_process_results
+        
+        # Then check if async update is needed based on cache age
+        if ccusage_async_check_needed; then
+            # Trigger async update in background
+            ccusage_async_update
+        fi
     fi
 }
 

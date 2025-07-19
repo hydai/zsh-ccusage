@@ -62,7 +62,7 @@
   - Make available as 'ccusage-refresh' command
   - _Requirements: R3
 
-- [ ] 10. Add async data fetching
+- [x] 10. Add async data fetching
   - Implement ccusage_async_update using background jobs
   - Prevent blocking during data fetch
   - Update prompt when fetch completes

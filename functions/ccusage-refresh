@@ -7,11 +7,16 @@
 function ccusage-refresh() {
     echo "Refreshing ccusage data..."
     
+    # Cancel any running async job
+    ccusage_async_cancel
+    
     # Clear all cached data to force fresh fetch
     ccusage_cache_clear
     
-    # Trigger immediate display update by calling the display function
-    # This will fetch fresh data since cache is empty
+    # Trigger async update immediately
+    ccusage_async_update
+    
+    # For immediate feedback, also do a sync fetch for display
     local result=$(ccusage_display)
     
     # Force prompt redraw to show updated data immediately
@@ -24,7 +29,7 @@ function ccusage-refresh() {
         echo "Press Enter to refresh your prompt with new data."
     fi
     
-    echo "✓ CCUsage data refreshed successfully"
+    echo "✓ CCUsage data refresh initiated"
 }
 
 # Register as a ZLE widget for better integration
@@ -42,6 +47,9 @@ if [[ "${ZSH_EVAL_CONTEXT}" == "toplevel" && "$0" == *ccusage-refresh* ]]; then
     # Source dependencies if not already loaded
     if ! command -v ccusage_cache_clear &> /dev/null; then
         source "${plugin_dir}/lib/cache.zsh"
+    fi
+    if ! command -v ccusage_async_cancel &> /dev/null; then
+        source "${plugin_dir}/lib/async.zsh"
     fi
     if ! command -v ccusage_display &> /dev/null; then
         source "${plugin_dir}/zsh-ccusage.plugin.zsh"
