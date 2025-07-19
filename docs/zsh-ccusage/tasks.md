@@ -104,7 +104,7 @@
   - Add screenshots of different display states
   - _Requirements: Documentation
 
-- [ ] 16. Add plugin manager compatibility
+- [x] 16. Add plugin manager compatibility
   - Test with oh-my-zsh framework
   - Test with prezto framework
   - Test with zinit plugin manager

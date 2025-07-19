@@ -9,6 +9,33 @@ CCUSAGE_VERSION="0.1.0"
 # Get plugin directory
 CCUSAGE_PLUGIN_DIR="${0:A:h}"
 
+# Detect plugin manager / framework
+function ccusage_detect_framework() {
+    if [[ -n "$ZSH_VERSION" ]]; then
+        # Check for oh-my-zsh
+        if [[ -n "$ZSH" && -f "$ZSH/oh-my-zsh.sh" ]]; then
+            echo "oh-my-zsh"
+        # Check for prezto
+        elif [[ -n "$ZPREZTODIR" || -d "${ZDOTDIR:-$HOME}/.zprezto" ]]; then
+            echo "prezto"
+        # Check for zinit
+        elif (( $+functions[zinit] )); then
+            echo "zinit"
+        # Check for zplug
+        elif (( $+functions[zplug] )); then
+            echo "zplug"
+        # Check for antigen
+        elif (( $+functions[antigen] )); then
+            echo "antigen"
+        else
+            echo "none"
+        fi
+    fi
+}
+
+# Framework compatibility
+CCUSAGE_FRAMEWORK=$(ccusage_detect_framework)
+
 # Lazy loading flags
 typeset -g CCUSAGE_LOADED=false
 typeset -g CCUSAGE_COMPONENTS_LOADED=false
@@ -16,6 +43,9 @@ typeset -g CCUSAGE_COMPONENTS_LOADED=false
 # Function to load components on demand
 function ccusage_load_components() {
     if [[ "$CCUSAGE_COMPONENTS_LOADED" == "false" ]]; then
+        # Add functions directory to fpath for autoloading
+        fpath=("${CCUSAGE_PLUGIN_DIR}/functions" $fpath)
+        
         # Source all required components
         source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-format"
         source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-fetch"
@@ -113,6 +143,27 @@ function ccusage_precmd() {
 
 # Initialize plugin
 function ccusage_init() {
+    # Framework-specific initialization
+    case "$CCUSAGE_FRAMEWORK" in
+        "oh-my-zsh")
+            # Oh-my-zsh handles plugin loading automatically
+            ;;
+        "prezto")
+            # Prezto modules may need special handling
+            # Define module metadata if running under prezto
+            if (( $+functions[pmodload] )); then
+                zstyle ':prezto:module:ccusage' loaded 'yes'
+            fi
+            ;;
+        "zinit")
+            # Zinit may benefit from ice modifiers
+            # These are typically set by the user, but we ensure compatibility
+            ;;
+        "zplug"|"antigen")
+            # These plugin managers handle loading automatically
+            ;;
+    esac
+    
     # Set default display if not already in RPROMPT
     if [[ ! "$RPROMPT" =~ "ccusage_display" ]]; then
         # Add ccusage display to the left of existing RPROMPT content
@@ -128,5 +179,7 @@ function ccusage_init() {
     CCUSAGE_LOADED=true
 }
 
-# Initialize the plugin
-ccusage_init
+# Initialize the plugin only if not already loaded
+if [[ "$CCUSAGE_LOADED" != "true" ]]; then
+    ccusage_init
+fi
