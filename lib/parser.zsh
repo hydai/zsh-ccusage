@@ -111,3 +111,99 @@ function ccusage_is_valid_json() {
         return 1
     fi
 }
+
+# Get number of days in the current month
+# Output: Number of days (28-31)
+function ccusage_get_days_in_month() {
+    local year=$(date +%Y)
+    local month=$(date +%m)
+    
+    # Use date command to get last day of current month
+    local days=$(date -d "${year}-${month}-01 +1 month -1 day" +%d 2>/dev/null)
+    
+    # Fallback for systems without GNU date (e.g., macOS)
+    if [[ -z "$days" ]]; then
+        case $month in
+            01|03|05|07|08|10|12) days=31 ;;
+            04|06|09|11) days=30 ;;
+            02)
+                # Check for leap year
+                if (( year % 4 == 0 && (year % 100 != 0 || year % 400 == 0) )); then
+                    days=29
+                else
+                    days=28
+                fi
+                ;;
+            *) days=30 ;;  # Fallback
+        esac
+    fi
+    
+    echo "$days"
+}
+
+# Calculate percentage based on configured mode
+# Input: daily_cost, monthly_cost (optional for monthly mode)
+# Output: Percentage value
+function ccusage_calculate_percentage() {
+    local daily_cost=$1
+    local monthly_cost=${2:-0}
+    
+    # Get configuration
+    local mode="${CCUSAGE_PERCENTAGE_MODE:-daily_avg}"
+    local plan_limit="${CCUSAGE_PLAN_LIMIT:-${CCUSAGE_DAILY_LIMIT:-200}}"
+    
+    # Validate mode, fall back to daily_avg if invalid
+    case "$mode" in
+        daily_avg|daily_plan|monthly) ;;
+        *) mode="daily_avg" ;;
+    esac
+    
+    # Validate numeric inputs
+    if ! [[ "$daily_cost" =~ ^[0-9]+\.?[0-9]*$ ]]; then
+        daily_cost=0
+    fi
+    if ! [[ "$monthly_cost" =~ ^[0-9]+\.?[0-9]*$ ]]; then
+        monthly_cost=0
+    fi
+    if ! [[ "$plan_limit" =~ ^[0-9]+\.?[0-9]*$ ]] || (( plan_limit <= 0 )); then
+        plan_limit=200
+    fi
+    
+    local percentage=0
+    
+    case "$mode" in
+        daily_avg)
+            # Calculate daily average: daily_cost / (plan_limit / days_in_month)
+            local days_in_month=$(ccusage_get_days_in_month)
+            local daily_limit
+            (( daily_limit = plan_limit / days_in_month ))
+            if (( daily_limit > 0 )); then
+                (( percentage = (daily_cost * 100.0) / daily_limit ))
+            fi
+            ;;
+        
+        daily_plan)
+            # Calculate against full plan limit: daily_cost / plan_limit
+            if (( plan_limit > 0 )); then
+                (( percentage = (daily_cost * 100.0) / plan_limit ))
+            fi
+            ;;
+        
+        monthly)
+            # Calculate monthly percentage: monthly_cost / plan_limit
+            if (( plan_limit > 0 )); then
+                (( percentage = (monthly_cost * 100.0) / plan_limit ))
+            fi
+            ;;
+    esac
+    
+    # Return integer percentage
+    percentage=${percentage%.*}
+    
+    # Ensure non-negative value
+    if (( percentage < 0 )); then
+        echo "0"
+    else
+        echo "$percentage"
+    fi
+}
