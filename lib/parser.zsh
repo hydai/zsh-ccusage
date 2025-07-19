@@ -20,6 +20,12 @@ function ccusage_parse_block_cost() {
         return 0
     fi
     
+    # Basic JSON validation
+    if ! ccusage_is_valid_json "$json_input"; then
+        echo "0.00"
+        return 0
+    fi
+    
     # Extract cost from the first active block
     # Look for pattern: "costUSD": <number>
     local cost=$(echo "$json_input" | grep -o '"costUSD"[[:space:]]*:[[:space:]]*[0-9.]*' | head -1 | grep -o '[0-9.]*$')
@@ -30,8 +36,14 @@ function ccusage_parse_block_cost() {
         return 0
     fi
     
+    # Validate numeric value
+    if ! [[ "$cost" =~ ^[0-9]+\.?[0-9]*$ ]]; then
+        echo "0.00"
+        return 0
+    fi
+    
     # Format to 2 decimal places
-    printf "%.2f" "$cost"
+    printf "%.2f" "$cost" 2>/dev/null || echo "0.00"
 }
 
 # Parse daily usage and calculate percentage
@@ -53,6 +65,12 @@ function ccusage_parse_daily_percentage() {
         return 0
     fi
     
+    # Basic JSON validation
+    if ! ccusage_is_valid_json "$json_input"; then
+        echo "0"
+        return 0
+    fi
+    
     # Extract total cost from daily totals
     # Look for pattern in totals section: "totalCost": <number>
     local total_cost=$(echo "$json_input" | grep -A10 '"totals"' | grep -o '"totalCost"[[:space:]]*:[[:space:]]*[0-9.]*' | head -1 | grep -o '[0-9.]*$')
@@ -68,8 +86,19 @@ function ccusage_parse_daily_percentage() {
         return 0
     fi
     
+    # Validate numeric value
+    if ! [[ "$total_cost" =~ ^[0-9]+\.?[0-9]*$ ]]; then
+        echo "0"
+        return 0
+    fi
+    
+    # Validate limit is numeric and positive
+    if ! [[ "$limit" =~ ^[0-9]+\.?[0-9]*$ ]] || (( $(echo "$limit <= 0" | bc -l) )); then
+        limit=200
+    fi
+    
     # Calculate percentage
-    local percentage=$(awk -v cost="$total_cost" -v limit="$limit" 'BEGIN { printf "%.0f", (cost / limit) * 100 }')
+    local percentage=$(awk -v cost="$total_cost" -v limit="$limit" 'BEGIN { printf "%.0f", (cost / limit) * 100 }' 2>/dev/null || echo "0")
     
     # Cap at 100% for display purposes (actual usage can exceed limit)
     if (( percentage > 100 )); then

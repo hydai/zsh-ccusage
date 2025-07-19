@@ -6,11 +6,12 @@
 source "${0:A:h}/../lib/colors.zsh"
 
 # Format cost and percentage for display
-# Input: cost (numeric), percentage (numeric)
+# Input: cost (numeric), percentage (numeric), is_stale (boolean)
 # Output: Formatted string with colors
 function ccusage_format_display() {
     local cost=${1:-0.00}
     local percentage=${2:-0}
+    local is_stale=${3:-false}
     
     # Get terminal width for compact mode detection
     local term_width=$COLUMNS
@@ -18,12 +19,19 @@ function ccusage_format_display() {
     # Apply color based on percentage
     local color=$(ccusage_get_color "$percentage")
     
+    # Add stale indicator if data is from cache
+    local stale_indicator=""
+    if [[ "$is_stale" == "true" ]]; then
+        # Use a subtle indicator (asterisk) to show stale data
+        stale_indicator="*"
+    fi
+    
     # Build the display string based on terminal width
     if [[ -n "$term_width" ]] && (( term_width < 80 )); then
         # Compact format for narrow terminals
-        echo "\$${cost}|${color}${percentage}%${CCUSAGE_COLOR_RESET}"
+        echo "\$${cost}|${color}${percentage}%${CCUSAGE_COLOR_RESET}${stale_indicator}"
     else
         # Default format with brackets and spacing
-        echo "[\$${cost} | ${color}${percentage}%${CCUSAGE_COLOR_RESET}]"
+        echo "[\$${cost} | ${color}${percentage}%${CCUSAGE_COLOR_RESET}]${stale_indicator}"
     fi
 }
