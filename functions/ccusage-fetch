@@ -100,3 +100,51 @@ function ccusage_fetch_daily() {
             ;;
     esac
 }
+
+# Fetches monthly usage data from ccusage CLI
+# Input: none
+# Output: JSON string or error message
+function ccusage_fetch_monthly() {
+    # Check if npx is available
+    if ! command -v npx &> /dev/null; then
+        echo '{"error": "npx not found"}'
+        return 1
+    fi
+    
+    # Execute ccusage command with timeout
+    local timeout_seconds=5
+    local output
+    local exit_code
+    
+    # Run command with timeout to prevent hanging
+    output=$(timeout $timeout_seconds npx ccusage@latest monthly --json 2>&1)
+    exit_code=$?
+    
+    # Handle different exit scenarios
+    case $exit_code in
+        0)
+            # Success - return the JSON output
+            echo "$output"
+            return 0
+            ;;
+        124)
+            # Timeout occurred
+            echo '{"error": "Command timed out", "error_type": "timeout"}'
+            return 1
+            ;;
+        *)
+            # Other errors
+            # Check if output contains specific error patterns
+            if [[ "$output" =~ "command not found" ]] || [[ "$output" =~ "not found ccusage" ]]; then
+                echo '{"error": "ccusage not installed", "error_type": "not_installed"}'
+            elif [[ "$output" =~ "ENOTFOUND" ]] || [[ "$output" =~ "ETIMEDOUT" ]] || [[ "$output" =~ "ECONNREFUSED" ]]; then
+                echo '{"error": "Network error", "error_type": "network"}'
+            elif [[ -n "$output" ]]; then
+                echo "{\"error\": \"Command failed: ${output//\"/\\\"}\", \"error_type\": \"unknown\"}"
+            else
+                echo '{"error": "Command failed with no output", "error_type": "unknown"}'
+            fi
+            return 1
+            ;;
+    esac
+}
