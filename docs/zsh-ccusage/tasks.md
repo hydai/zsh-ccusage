@@ -146,7 +146,7 @@
   - Test with terminals that don't support colors
   - _Requirements: R8
 
-- [ ] 22. Update parser for new data requirements
+- [x] 22. Update parser for new data requirements
   - Modify ccusage_parse_daily_percentage to use configurable limit
   - Add parsing for monthly usage JSON response
   - Extract total cost from monthly data
