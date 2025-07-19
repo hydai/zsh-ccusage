@@ -195,7 +195,7 @@
   - Ensure suffix appears before percentage separator
   - _Requirements: R11
 
-- [ ] 29. Implement daily cost fetching for cost mode
+- [x] 29. Implement daily cost fetching for cost mode
   - Add ccusage_fetch_daily_cost function
   - Use npx ccusage@latest -s YYYYMMDD --json
   - Auto-generate today's date in YYYYMMDD format
