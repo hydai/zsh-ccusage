@@ -90,10 +90,8 @@ function ccusage_parse_daily_percentage() {
     (( percentage = (total_cost * 100.0) / limit ))
     percentage=${percentage%.*}  # Truncate to integer
     
-    # Cap at 100% for display purposes
-    if (( percentage > 100 )); then
-        echo "100"
-    elif (( percentage < 0 )); then
+    # Ensure non-negative value
+    if (( percentage < 0 )); then
         echo "0"
     else
         echo "$percentage"
