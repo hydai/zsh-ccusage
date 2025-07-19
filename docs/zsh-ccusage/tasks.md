@@ -181,7 +181,7 @@
   - Create migration guide from DAILY_LIMIT to PLAN_LIMIT
   - _Requirements: R6, R7, R8
 
-- [ ] 27. Add CCUSAGE_COST_MODE environment variable
+- [x] 27. Add CCUSAGE_COST_MODE environment variable
   - Add cost mode configuration with values: active (default), daily, monthly
   - Implement ccusage_validate_cost_mode function
   - Fall back to 'active' for invalid values
