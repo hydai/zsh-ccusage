@@ -20,7 +20,7 @@
   - Handle command not found gracefully
   - _Requirements: R1
 
-- [ ] 4. Parse active block cost from JSON response
+- [x] 4. Parse active block cost from JSON response
   - Create lib/parser.zsh with JSON parsing utilities
   - Implement ccusage_parse_block_cost function
   - Extract cost field and handle malformed JSON
