@@ -1,0 +1,29 @@
+#!/usr/bin/env zsh
+
+# Display formatting function for zsh-ccusage plugin
+
+# Source color utilities
+source "${0:A:h}/../lib/colors.zsh"
+
+# Format cost and percentage for display
+# Input: cost (numeric), percentage (numeric)
+# Output: Formatted string with colors
+function ccusage_format_display() {
+    local cost=${1:-0.00}
+    local percentage=${2:-0}
+    
+    # Get terminal width for compact mode detection
+    local term_width=$COLUMNS
+    
+    # Apply color based on percentage
+    local color=$(ccusage_get_color "$percentage")
+    
+    # Build the display string based on terminal width
+    if [[ -n "$term_width" ]] && (( term_width < 80 )); then
+        # Compact format for narrow terminals
+        echo "\$${cost}|${color}${percentage}%${CCUSAGE_COLOR_RESET}"
+    else
+        # Default format with brackets and spacing
+        echo "[\$${cost} | ${color}${percentage}%${CCUSAGE_COLOR_RESET}]"
+    fi
+}

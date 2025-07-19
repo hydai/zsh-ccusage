@@ -6,6 +6,12 @@
 # Plugin version
 CCUSAGE_VERSION="0.1.0"
 
+# Get plugin directory
+CCUSAGE_PLUGIN_DIR="${0:A:h}"
+
+# Source formatting function
+source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-format"
+
 # Initialize plugin
 function ccusage_init() {
     # Set default display if not already in RPROMPT
@@ -17,8 +23,12 @@ function ccusage_init() {
 
 # Display function - returns formatted cost information
 function ccusage_display() {
-    # For now, return hardcoded display
-    echo '[$0.00 | 0%]'
+    # For now, use hardcoded values with formatting
+    local cost="0.00"
+    local percentage="0"
+    
+    # Use the formatting function with color support
+    ccusage_format_display "$cost" "$percentage"
 }
 
 # Initialize the plugin
