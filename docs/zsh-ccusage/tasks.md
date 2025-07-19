@@ -118,7 +118,7 @@
   - Update configuration loading in plugin initialization
   - _Requirements: R7
 
-- [ ] 18. Implement monthly usage fetching
+- [x] 18. Implement monthly usage fetching
   - Add ccusage_fetch_monthly function in functions/ccusage-fetch
   - Execute npx ccusage@latest monthly --json
   - Cache monthly data separately with 5-minute TTL
