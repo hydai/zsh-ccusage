@@ -104,13 +104,17 @@ function ccusage_async_check_needed() {
         return 1
     fi
     
+    # Generate date-based cache keys
+    local today=$(date '+%Y%m%d')
+    local current_month=$(date '+%Y%m')
+    
     local block_valid=$(ccusage_cache_valid "active_block" && echo 1 || echo 0)
-    local daily_valid=$(ccusage_cache_valid "daily_usage" && echo 1 || echo 0)
+    local daily_valid=$(ccusage_cache_valid "daily_usage_${today}" && echo 1 || echo 0)
     local monthly_valid=1  # Default to valid unless in monthly mode
     
     # Check monthly cache only if in monthly mode
     if [[ "${CCUSAGE_PERCENTAGE_MODE:-daily_avg}" == "monthly" ]]; then
-        monthly_valid=$(ccusage_cache_valid "monthly_usage" && echo 1 || echo 0)
+        monthly_valid=$(ccusage_cache_valid "monthly_usage_${current_month}" && echo 1 || echo 0)
     fi
     
     # Return 0 if update needed, 1 if cache is still fresh
@@ -134,6 +138,10 @@ function ccusage_async_process_results() {
     local daily_file="$CCUSAGE_ASYNC_TMPDIR/daily.json"
     local monthly_file="$CCUSAGE_ASYNC_TMPDIR/monthly.json"
     
+    # Generate date-based cache keys
+    local today=$(date '+%Y%m%d')
+    local current_month=$(date '+%Y%m')
+    
     # Update cache with results
     if [[ -f "$block_file" ]]; then
         local cached_block=$(<"$block_file")
@@ -145,14 +153,14 @@ function ccusage_async_process_results() {
     if [[ -f "$daily_file" ]]; then
         local cached_daily=$(<"$daily_file")
         if [[ -n "$cached_daily" && ! "$cached_daily" =~ '"error"' ]]; then
-            ccusage_cache_set "daily_usage" "$cached_daily"
+            ccusage_cache_set "daily_usage_${today}" "$cached_daily"
         fi
     fi
     
     if [[ -f "$monthly_file" ]]; then
         local cached_monthly=$(<"$monthly_file")
         if [[ -n "$cached_monthly" && ! "$cached_monthly" =~ '"error"' ]]; then
-            ccusage_cache_set "monthly_usage" "$cached_monthly"
+            ccusage_cache_set "monthly_usage_${current_month}" "$cached_monthly"
         fi
     fi
     

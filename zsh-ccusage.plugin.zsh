@@ -100,8 +100,10 @@ function ccusage_display() {
     
     local cost percentage
     local cache_key_block="active_block"
-    local cache_key_daily="daily_usage"
-    local cache_key_monthly="monthly_usage"
+    local today=$(date '+%Y%m%d')
+    local current_month=$(date '+%Y%m')
+    local cache_key_daily="daily_usage_${today}"
+    local cache_key_monthly="monthly_usage_${current_month}"
     local is_stale=false
     
     # Try to get cached active block data (never fetch synchronously)

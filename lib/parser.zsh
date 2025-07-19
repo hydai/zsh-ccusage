@@ -330,7 +330,9 @@ function ccusage_get_cost_by_mode() {
             
         daily)
             mode_indicator="D"
-            cache_key="cost_daily"
+            # Include today's date in cache key for daily mode
+            local today=$(date '+%Y%m%d')
+            cache_key="cost_daily_${today}"
             
             # Try cache first
             json_data=$(ccusage_cache_get "$cache_key")
@@ -352,7 +354,9 @@ function ccusage_get_cost_by_mode() {
             
         monthly)
             mode_indicator="M"
-            cache_key="cost_monthly"
+            # Include current month in cache key for monthly mode
+            local current_month=$(date '+%Y%m')
+            cache_key="cost_monthly_${current_month}"
             
             # Try cache first
             json_data=$(ccusage_cache_get "$cache_key")
