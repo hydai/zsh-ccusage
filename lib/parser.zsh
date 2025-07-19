@@ -247,3 +247,40 @@ function ccusage_parse_monthly_cost() {
     # Format to 2 decimal places using zsh arithmetic
     printf "%.2f" "$total_cost" 2>/dev/null || echo "0.00"
 }
+
+# Parse daily cost from JSON response
+# Input: JSON string from ccusage -s YYYYMMDD command
+# Output: Numeric cost value or 0.00
+function ccusage_parse_daily_cost() {
+    local json_input=$1
+    
+    # Check if input is empty or null
+    if [[ -z "$json_input" ]]; then
+        echo "0.00"
+        return 0
+    fi
+    
+    # Check if it's an error response
+    if [[ "$json_input" == *'"error"'* ]]; then
+        echo "0.00"
+        return 0
+    fi
+    
+    # Extract total cost from daily response
+    # Daily response structure: [{"model": "...", "totalCost": X, ...}]
+    local total_cost=""
+    
+    # Try to find totalCost in the response
+    if [[ "$json_input" =~ '"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+        total_cost="${match[1]}"
+    fi
+    
+    # If no cost found, return 0.00
+    if [[ -z "$total_cost" ]]; then
+        echo "0.00"
+        return 0
+    fi
+    
+    # Format to 2 decimal places using zsh arithmetic
+    printf "%.2f" "$total_cost" 2>/dev/null || echo "0.00"
+}
