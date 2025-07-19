@@ -153,7 +153,7 @@
   - Handle missing or malformed monthly data
   - _Requirements: R6
 
-- [ ] 23. Integrate percentage modes into async update flow
+- [x] 23. Integrate percentage modes into async update flow
   - Update ccusage_async_update to fetch monthly data when needed
   - Only fetch monthly data for monthly mode to optimize performance
   - Ensure all modes work with existing cache and async infrastructure
