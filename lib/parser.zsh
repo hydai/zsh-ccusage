@@ -176,7 +176,7 @@ function ccusage_calculate_percentage() {
             # Calculate daily average: daily_cost / (plan_limit / days_in_month)
             local days_in_month=$(ccusage_get_days_in_month)
             local daily_limit
-            (( daily_limit = plan_limit / days_in_month ))
+            (( daily_limit = plan_limit * 1.0 / days_in_month ))
             if (( daily_limit > 0 )); then
                 (( percentage = (daily_cost * 100.0) / daily_limit ))
             fi

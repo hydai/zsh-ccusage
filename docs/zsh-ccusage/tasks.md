@@ -167,7 +167,7 @@
   - Document migration in README
   - _Requirements: R7
 
-- [ ] 25. Test percentage display with real data
+- [x] 25. Test percentage display with real data
   - Verify daily_avg calculation: $20 usage, 31-day month = 310%D
   - Verify daily_plan calculation: $100 usage, $200 limit = 50%P
   - Verify monthly calculation: $1800 usage, $200 limit = 900%M
