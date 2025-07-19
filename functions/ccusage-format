@@ -26,8 +26,17 @@ function ccusage_format_display() {
         stale_indicator="*"
     fi
     
-    # Build the display string based on terminal width
-    if [[ -n "$term_width" ]] && (( term_width < 80 )); then
+    # Get custom format or use defaults
+    local format="${CCUSAGE_DISPLAY_FORMAT:-}"
+    
+    # Build the display string
+    if [[ -n "$format" ]]; then
+        # User-defined format
+        # Replace placeholders: $cost, $percentage
+        local display="${format//\$cost/\$$cost}"
+        display="${display//\$percentage/${color}${percentage}%${CCUSAGE_COLOR_RESET}}"
+        echo "${display}${stale_indicator}"
+    elif [[ -n "$term_width" ]] && (( term_width < 80 )); then
         # Compact format for narrow terminals
         echo "\$${cost}|${color}${percentage}%${CCUSAGE_COLOR_RESET}${stale_indicator}"
     else

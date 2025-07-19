@@ -76,7 +76,7 @@
   - Gracefully handle invalid JSON responses
   - _Requirements: R4
 
-- [ ] 12. Add environment variable configuration
+- [x] 12. Add environment variable configuration
   - Support CCUSAGE_AUTO_UPDATE (true/false)
   - Support CCUSAGE_UPDATE_INTERVAL (seconds)
   - Support CCUSAGE_DISPLAY_FORMAT (custom format)
