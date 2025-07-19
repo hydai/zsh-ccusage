@@ -1,0 +1,93 @@
+#!/usr/bin/env zsh
+
+# Data fetching functions for zsh-ccusage plugin
+
+# Fetches cost data from ccusage CLI for active blocks
+# Input: none
+# Output: JSON string or error message
+function ccusage_fetch_active_block() {
+    # Check if npx is available
+    if ! command -v npx &> /dev/null; then
+        echo '{"error": "npx not found"}'
+        return 1
+    fi
+    
+    # Execute ccusage command with timeout
+    local timeout_seconds=5
+    local output
+    local exit_code
+    
+    # Run command with timeout to prevent hanging
+    output=$(timeout $timeout_seconds npx ccusage@latest blocks --active --json 2>&1)
+    exit_code=$?
+    
+    # Handle different exit scenarios
+    case $exit_code in
+        0)
+            # Success - return the JSON output
+            echo "$output"
+            return 0
+            ;;
+        124)
+            # Timeout occurred
+            echo '{"error": "Command timed out"}'
+            return 1
+            ;;
+        *)
+            # Other errors (command not found, network issues, etc.)
+            # Check if output contains useful error info
+            if [[ -n "$output" ]]; then
+                # Try to create valid JSON with error message
+                echo "{\"error\": \"Command failed: ${output//\"/\\\"}\"}"
+            else
+                echo '{"error": "Command failed with no output"}'
+            fi
+            return 1
+            ;;
+    esac
+}
+
+# Fetches daily usage data from ccusage CLI
+# Input: date in YYYYMMDD format (optional, defaults to today)
+# Output: JSON string or error message
+function ccusage_fetch_daily() {
+    local date=${1:-$(date +%Y%m%d)}
+    
+    # Check if npx is available
+    if ! command -v npx &> /dev/null; then
+        echo '{"error": "npx not found"}'
+        return 1
+    fi
+    
+    # Execute ccusage command with timeout
+    local timeout_seconds=5
+    local output
+    local exit_code
+    
+    # Run command with timeout to prevent hanging
+    output=$(timeout $timeout_seconds npx ccusage@latest daily -s "$date" --json 2>&1)
+    exit_code=$?
+    
+    # Handle different exit scenarios
+    case $exit_code in
+        0)
+            # Success - return the JSON output
+            echo "$output"
+            return 0
+            ;;
+        124)
+            # Timeout occurred
+            echo '{"error": "Command timed out"}'
+            return 1
+            ;;
+        *)
+            # Other errors
+            if [[ -n "$output" ]]; then
+                echo "{\"error\": \"Command failed: ${output//\"/\\\"}\"}"
+            else
+                echo '{"error": "Command failed with no output"}'
+            fi
+            return 1
+            ;;
+    esac
+}
