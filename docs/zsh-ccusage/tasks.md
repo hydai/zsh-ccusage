@@ -188,7 +188,7 @@
   - Store validated mode in global variable
   - _Requirements: R9, R11
 
-- [ ] 28. Update cost display to show mode suffix
+- [x] 28. Update cost display to show mode suffix
   - Modify ccusage_format_display to append cost mode suffix
   - Show 'A' for active, 'D' for daily, 'M' for monthly
   - Format as "$45.23A", "$20.45D", "$1800.00M"
