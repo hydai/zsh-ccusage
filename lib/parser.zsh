@@ -49,7 +49,7 @@ function ccusage_parse_block_cost() {
 # Output: Percentage (0-100) based on limit
 function ccusage_parse_daily_percentage() {
     local json_input=$1
-    local limit=${2:-200}  # Default to $200 if not specified
+    local limit=${2:-${CCUSAGE_PLAN_LIMIT:-${CCUSAGE_DAILY_LIMIT:-200}}}  # Use PLAN_LIMIT, fallback to DAILY_LIMIT, then 200
     
     # Check if input is empty or null
     if [[ -z "$json_input" ]]; then
@@ -206,4 +206,44 @@ function ccusage_calculate_percentage() {
     else
         echo "$percentage"
     fi
+}
+
+# Parse monthly usage total cost from JSON response
+# Input: JSON string from ccusage monthly command
+# Output: Numeric cost value or 0.00
+function ccusage_parse_monthly_cost() {
+    local json_input=$1
+    
+    # Check if input is empty or null
+    if [[ -z "$json_input" ]]; then
+        echo "0.00"
+        return 0
+    fi
+    
+    # Check if it's an error response
+    if [[ "$json_input" == *'"error"'* ]]; then
+        echo "0.00"
+        return 0
+    fi
+    
+    # Extract total cost from monthly response
+    # Monthly response typically has structure: {"usage": [...], "totals": {"totalCost": X}}
+    local total_cost=""
+    
+    # First try to find in totals section
+    if [[ "$json_input" =~ '"totals"[^}]*"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+        total_cost="${match[1]}"
+    elif [[ "$json_input" =~ '"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+        # Fallback to any totalCost in the response
+        total_cost="${match[1]}"
+    fi
+    
+    # If no cost found, return 0.00
+    if [[ -z "$total_cost" ]]; then
+        echo "0.00"
+        return 0
+    fi
+    
+    # Format to 2 decimal places using zsh arithmetic
+    printf "%.2f" "$total_cost" 2>/dev/null || echo "0.00"
 }
