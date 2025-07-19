@@ -223,7 +223,7 @@
   - Prevent cache collision between modes
   - _Requirements: R13
 
-- [ ] 33. Update async fetcher for parallel cost updates
+- [x] 33. Update async fetcher for parallel cost updates
   - Modify ccusage_async_update to fetch all cost modes
   - Run fetches in parallel using background jobs
   - Update only expired caches
