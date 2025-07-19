@@ -86,6 +86,7 @@ function ccusage_display() {
     local cost percentage
     local cache_key_block="active_block"
     local cache_key_daily="daily_usage"
+    local cache_key_monthly="monthly_usage"
     local is_stale=false
     
     # Try to get cached active block data (never fetch synchronously)
@@ -116,6 +117,19 @@ function ccusage_display() {
         has_data=true
     fi
     
+    # Try to get cached monthly usage data if in monthly mode
+    local monthly_json=""
+    if [[ "${CCUSAGE_PERCENTAGE_MODE:-daily_avg}" == "monthly" ]]; then
+        monthly_json=$(ccusage_cache_get "$cache_key_monthly")
+        if [[ -z "$monthly_json" ]]; then
+            # No cached data - try stale cache
+            monthly_json=$(ccusage_cache_get_stale "$cache_key_monthly")
+            if [[ -n "$monthly_json" ]]; then
+                is_stale=true
+            fi
+        fi
+    fi
+    
     # If no data at all, return loading indicator
     if [[ "$has_data" == "false" ]]; then
         echo -n "[Loading...]"
@@ -124,8 +138,34 @@ function ccusage_display() {
     
     # Parse the data
     cost=$(ccusage_parse_block_cost "$block_json")
-    local daily_limit=${CCUSAGE_DAILY_LIMIT:-200}
-    percentage=$(ccusage_parse_daily_percentage "$daily_json" "$daily_limit")
+    
+    # Calculate percentage based on mode
+    local mode="${CCUSAGE_PERCENTAGE_MODE:-daily_avg}"
+    local daily_cost monthly_cost
+    
+    # Parse daily cost from JSON
+    daily_cost=$(ccusage_parse_daily_percentage "$daily_json" "1")  # Get raw cost by using limit=1
+    if [[ -z "$daily_cost" ]] || [[ "$daily_cost" == "0" ]]; then
+        # Fallback: extract total cost directly
+        if [[ "$daily_json" =~ '"totals"[^}]*"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+            daily_cost="${match[1]}"
+        elif [[ "$daily_json" =~ '"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+            daily_cost="${match[1]}"
+        else
+            daily_cost="0"
+        fi
+    else
+        # Convert percentage back to cost (daily_cost was percentage with limit=1)
+        daily_cost=$((daily_cost / 100.0))
+    fi
+    
+    # Parse monthly cost if needed
+    if [[ "$mode" == "monthly" && -n "$monthly_json" ]]; then
+        monthly_cost=$(ccusage_parse_monthly_cost "$monthly_json")
+    fi
+    
+    # Calculate percentage using the new function
+    percentage=$(ccusage_calculate_percentage "$daily_cost" "$monthly_cost")
     
     # Format and display the data
     ccusage_format_display "$cost" "$percentage" "$is_stale"

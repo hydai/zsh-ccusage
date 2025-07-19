@@ -31,6 +31,7 @@ function ccusage_async_update() {
     # Export necessary variables for background job
     export CCUSAGE_ASYNC_TMPDIR
     export CCUSAGE_PLUGIN_DIR
+    export CCUSAGE_PERCENTAGE_MODE
     
     # Disable job control notifications for this subshell
     setopt local_options no_notify no_monitor
@@ -44,10 +45,11 @@ function ccusage_async_update() {
         # Create result files
         local block_file="$CCUSAGE_ASYNC_TMPDIR/block.json"
         local daily_file="$CCUSAGE_ASYNC_TMPDIR/daily.json"
+        local monthly_file="$CCUSAGE_ASYNC_TMPDIR/monthly.json"
         local status_file="$CCUSAGE_ASYNC_TMPDIR/status"
         
         # Clear previous results
-        rm -f "$block_file" "$daily_file" "$status_file" 2>/dev/null
+        rm -f "$block_file" "$daily_file" "$monthly_file" "$status_file" 2>/dev/null
         
         # Fetch active block data
         local block_json=$(ccusage_fetch_active_block 2>/dev/null)
@@ -57,6 +59,14 @@ function ccusage_async_update() {
         local daily_json=$(ccusage_fetch_daily 2>/dev/null)
         local daily_success=$?
         
+        # Fetch monthly usage data only if percentage mode is monthly
+        local monthly_json=""
+        local monthly_success=1
+        if [[ "${CCUSAGE_PERCENTAGE_MODE:-daily_avg}" == "monthly" ]]; then
+            monthly_json=$(ccusage_fetch_monthly 2>/dev/null)
+            monthly_success=$?
+        fi
+        
         # Write results to files
         if [[ $block_success -eq 0 && -n "$block_json" ]]; then
             echo "$block_json" > "$block_file" 2>/dev/null
@@ -64,6 +74,10 @@ function ccusage_async_update() {
         
         if [[ $daily_success -eq 0 && -n "$daily_json" ]]; then
             echo "$daily_json" > "$daily_file" 2>/dev/null
+        fi
+        
+        if [[ $monthly_success -eq 0 && -n "$monthly_json" ]]; then
+            echo "$monthly_json" > "$monthly_file" 2>/dev/null
         fi
         
         # Signal completion
@@ -92,9 +106,15 @@ function ccusage_async_check_needed() {
     
     local block_valid=$(ccusage_cache_valid "active_block" && echo 1 || echo 0)
     local daily_valid=$(ccusage_cache_valid "daily_usage" && echo 1 || echo 0)
+    local monthly_valid=1  # Default to valid unless in monthly mode
+    
+    # Check monthly cache only if in monthly mode
+    if [[ "${CCUSAGE_PERCENTAGE_MODE:-daily_avg}" == "monthly" ]]; then
+        monthly_valid=$(ccusage_cache_valid "monthly_usage" && echo 1 || echo 0)
+    fi
     
     # Return 0 if update needed, 1 if cache is still fresh
-    if [[ $block_valid -eq 0 || $daily_valid -eq 0 ]]; then
+    if [[ $block_valid -eq 0 || $daily_valid -eq 0 || $monthly_valid -eq 0 ]]; then
         return 0
     else
         return 1
@@ -112,6 +132,7 @@ function ccusage_async_process_results() {
     # Read results from files
     local block_file="$CCUSAGE_ASYNC_TMPDIR/block.json"
     local daily_file="$CCUSAGE_ASYNC_TMPDIR/daily.json"
+    local monthly_file="$CCUSAGE_ASYNC_TMPDIR/monthly.json"
     
     # Update cache with results
     if [[ -f "$block_file" ]]; then
@@ -128,8 +149,15 @@ function ccusage_async_process_results() {
         fi
     fi
     
+    if [[ -f "$monthly_file" ]]; then
+        local cached_monthly=$(<"$monthly_file")
+        if [[ -n "$cached_monthly" && ! "$cached_monthly" =~ '"error"' ]]; then
+            ccusage_cache_set "monthly_usage" "$cached_monthly"
+        fi
+    fi
+    
     # Clean up temp files
-    rm -f "$block_file" "$daily_file" "$status_file"
+    rm -f "$block_file" "$daily_file" "$monthly_file" "$status_file"
     
     # Clear async PID
     CCUSAGE_ASYNC_PID=""
