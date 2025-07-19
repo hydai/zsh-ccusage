@@ -202,7 +202,7 @@
   - Parse total cost from response
   - _Requirements: R9
 
-- [ ] 30. Implement monthly cost fetching for cost mode
+- [x] 30. Implement monthly cost fetching for cost mode
   - Add ccusage_fetch_monthly_cost function
   - Use npx ccusage@latest monthly -s YYYYMM01 --json
   - Auto-generate current month's first day
