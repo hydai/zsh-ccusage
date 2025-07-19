@@ -71,46 +71,30 @@ function ccusage_display() {
     local cache_key_daily="daily_usage"
     local is_stale=false
     
-    # Try to get cached active block data
+    # Try to get cached active block data (never fetch synchronously)
     local block_json=$(ccusage_cache_get "$cache_key_block")
     if [[ -z "$block_json" ]]; then
-        # Cache miss - fetch fresh data
-        block_json=$(ccusage_fetch_active_block)
-        # Check if we got an error
-        if [[ "$block_json" == *'"error"'* ]]; then
-            # For network errors, try to use stale cache
-            if [[ "$block_json" == *'"error_type"'*':'*'"network"'* ]]; then
-                local stale_block=$(ccusage_cache_get_stale "$cache_key_block")
-                if [[ -n "$stale_block" ]]; then
-                    block_json="$stale_block"
-                    is_stale=true
-                fi
-            fi
+        # No cached data - try stale cache
+        block_json=$(ccusage_cache_get_stale "$cache_key_block")
+        if [[ -n "$block_json" ]]; then
+            is_stale=true
         else
-            # Success - cache the fresh data
-            ccusage_cache_set "$cache_key_block" "$block_json"
+            # No data at all - use default
+            block_json='{"blocks":[]}'
         fi
     fi
     cost=$(ccusage_parse_block_cost "$block_json")
     
-    # Try to get cached daily usage data
+    # Try to get cached daily usage data (never fetch synchronously)
     local daily_json=$(ccusage_cache_get "$cache_key_daily")
     if [[ -z "$daily_json" ]]; then
-        # Cache miss - fetch fresh data
-        daily_json=$(ccusage_fetch_daily)
-        # Check if we got an error
-        if [[ "$daily_json" == *'"error"'* ]]; then
-            # For network errors, try to use stale cache
-            if [[ "$daily_json" == *'"error_type"'*':'*'"network"'* ]]; then
-                local stale_daily=$(ccusage_cache_get_stale "$cache_key_daily")
-                if [[ -n "$stale_daily" ]]; then
-                    daily_json="$stale_daily"
-                    is_stale=true
-                fi
-            fi
+        # No cached data - try stale cache
+        daily_json=$(ccusage_cache_get_stale "$cache_key_daily")
+        if [[ -n "$daily_json" ]]; then
+            is_stale=true
         else
-            # Success - cache the fresh data
-            ccusage_cache_set "$cache_key_daily" "$daily_json"
+            # No data at all - use default
+            daily_json='{"totals":{"totalCost":0}}'
         fi
     fi
     local daily_limit=${CCUSAGE_DAILY_LIMIT:-200}
@@ -175,6 +159,22 @@ function ccusage_init() {
     precmd_functions=(${precmd_functions[@]:#ccusage_precmd})
     # Add our precmd function
     precmd_functions+=(ccusage_precmd)
+    
+    # Load components and trigger initial async update
+    ccusage_load_components
+    
+    # Set initial default values in cache to avoid empty display
+    if ! ccusage_cache_valid "active_block"; then
+        ccusage_cache_set "active_block" '{"blocks":[]}'
+    fi
+    if ! ccusage_cache_valid "daily_usage"; then
+        ccusage_cache_set "daily_usage" '{"totals":{"totalCost":0}}'
+    fi
+    
+    # Trigger first async update immediately
+    if [[ "${CCUSAGE_AUTO_UPDATE:-true}" == "true" ]]; then
+        ccusage_async_update
+    fi
     
     CCUSAGE_LOADED=true
 }

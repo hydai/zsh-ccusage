@@ -46,15 +46,15 @@ function ccusage_format_display() {
         # User-defined format
         # Replace placeholders: $cost, $percentage
         local display="${format//\$cost/\$$cost}"
-        display="${display//\$percentage/${color}${percentage}%${CCUSAGE_COLOR_RESET}}"
-        echo "${display}${stale_indicator}"
+        display="${display//\$percentage/${percentage}%}"
+        echo -n "${display}${stale_indicator}"
     elif (( term_width < 80 )); then
         # Compact format for narrow terminals
         # Format: $45.23|35%
-        echo "\$${cost}|${color}${percentage}%${CCUSAGE_COLOR_RESET}${stale_indicator}"
+        echo -n "\$${cost}|${percentage}%${stale_indicator}"
     else
         # Default format with brackets and spacing for wider terminals
         # Format: [$45.23 | 35%]
-        echo "[\$${cost} | ${color}${percentage}%${CCUSAGE_COLOR_RESET}]${stale_indicator}"
+        echo -n "[\$${cost} | ${percentage}%]${stale_indicator}"
     fi
 }

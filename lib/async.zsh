@@ -31,11 +31,14 @@ function ccusage_async_update() {
     export CCUSAGE_ASYNC_TMPDIR
     export CCUSAGE_PLUGIN_DIR
     
+    # Disable job control notifications for this subshell
+    setopt local_options no_notify no_monitor
+    
     # Start background job
     (
         # Source required functions in subshell
-        source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-fetch"
-        source "${CCUSAGE_PLUGIN_DIR}/lib/cache.zsh"
+        source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-fetch" 2>/dev/null
+        source "${CCUSAGE_PLUGIN_DIR}/lib/cache.zsh" 2>/dev/null
         
         # Create result files
         local block_file="$CCUSAGE_ASYNC_TMPDIR/block.json"
@@ -43,7 +46,7 @@ function ccusage_async_update() {
         local status_file="$CCUSAGE_ASYNC_TMPDIR/status"
         
         # Clear previous results
-        rm -f "$block_file" "$daily_file" "$status_file"
+        rm -f "$block_file" "$daily_file" "$status_file" 2>/dev/null
         
         # Fetch active block data
         local block_json=$(ccusage_fetch_active_block 2>/dev/null)
@@ -55,16 +58,16 @@ function ccusage_async_update() {
         
         # Write results to files
         if [[ $block_success -eq 0 && -n "$block_json" ]]; then
-            echo "$block_json" > "$block_file"
+            echo "$block_json" > "$block_file" 2>/dev/null
         fi
         
         if [[ $daily_success -eq 0 && -n "$daily_json" ]]; then
-            echo "$daily_json" > "$daily_file"
+            echo "$daily_json" > "$daily_file" 2>/dev/null
         fi
         
         # Signal completion
-        echo "done" > "$status_file"
-    ) &
+        echo "done" > "$status_file" 2>/dev/null
+    ) 2>&1 >/dev/null &!
     
     # Store background job PID
     CCUSAGE_ASYNC_PID=$!
@@ -129,6 +132,12 @@ function ccusage_async_process_results() {
     
     # Clear async PID
     CCUSAGE_ASYNC_PID=""
+    
+    # Trigger prompt redraw if in interactive shell
+    if [[ -o interactive ]] && (( $+functions[zle] )); then
+        # Force prompt refresh
+        zle && zle reset-prompt 2>/dev/null || true
+    fi
     
     return 0
 }
