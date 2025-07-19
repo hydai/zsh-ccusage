@@ -174,7 +174,7 @@
   - Test edge cases: 0% usage, >999% usage
   - _Requirements: R6
 
-- [ ] 26. Update documentation for percentage features
+- [x] 26. Update documentation for percentage features
   - Document new environment variables in README
   - Add examples for each percentage mode
   - Include screenshots showing different modes and colors
