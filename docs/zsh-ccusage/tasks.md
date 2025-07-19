@@ -34,7 +34,7 @@
   - Handle edge cases (negative, over 100%)
   - _Requirements: R2
 
-- [ ] 6. Integrate real data into prompt display
+- [x] 6. Integrate real data into prompt display
   - Connect fetcher → parser → formatter pipeline
   - Update RPROMPT with live cost and percentage data
   - Test end-to-end data flow
