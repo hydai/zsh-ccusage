@@ -230,7 +230,7 @@
   - Show current mode immediately while others update
   - _Requirements: R13
 
-- [ ] 34. Implement ccusage-set-cost-mode command
+- [x] 34. Implement ccusage-set-cost-mode command
   - Create runtime mode switcher function
   - Validate input mode (active, daily, monthly)
   - Update CCUSAGE_COST_MODE for current session
