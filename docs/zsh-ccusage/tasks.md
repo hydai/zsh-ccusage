@@ -48,7 +48,7 @@
   - Set 5-minute default cache duration
   - _Requirements: R4
 
-- [ ] 8. Add precmd hook for automatic updates
+- [x] 8. Add precmd hook for automatic updates
   - Implement ccusage_precmd function
   - Check CCUSAGE_AUTO_UPDATE environment variable
   - Trigger data fetch on each command if enabled

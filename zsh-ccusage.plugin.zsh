@@ -22,6 +22,12 @@ function ccusage_init() {
         # Add ccusage display to the left of existing RPROMPT content
         RPROMPT='$(ccusage_display)'${RPROMPT:+" $RPROMPT"}
     fi
+    
+    # Register precmd hook for automatic updates
+    # Remove any existing ccusage_precmd from precmd_functions to avoid duplicates
+    precmd_functions=(${precmd_functions[@]:#ccusage_precmd})
+    # Add our precmd function
+    precmd_functions+=(ccusage_precmd)
 }
 
 # Display function - returns formatted cost information
@@ -57,6 +63,18 @@ function ccusage_display() {
     
     # Format and display the data
     ccusage_format_display "$cost" "$percentage"
+}
+
+# Precmd hook for automatic updates
+function ccusage_precmd() {
+    # Check if auto-update is enabled (default: true)
+    local auto_update=${CCUSAGE_AUTO_UPDATE:-true}
+    
+    # Only trigger update if auto-update is enabled
+    if [[ "$auto_update" == "true" ]]; then
+        # Force cache refresh by clearing cache entries
+        ccusage_cache_clear
+    fi
 }
 
 # Initialize the plugin
