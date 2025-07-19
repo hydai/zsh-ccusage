@@ -82,6 +82,7 @@ function ccusage_load_components() {
         source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-format"
         source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-fetch"
         source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-refresh"
+        source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-set-cost-mode"
         source "${CCUSAGE_PLUGIN_DIR}/lib/parser.zsh"
         source "${CCUSAGE_PLUGIN_DIR}/lib/cache.zsh"
         source "${CCUSAGE_PLUGIN_DIR}/lib/async.zsh"

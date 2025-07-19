@@ -1,0 +1,43 @@
+#!/usr/bin/env zsh
+
+# ccusage-set-cost-mode - Runtime cost mode switcher
+# Allows switching between active, daily, and monthly cost display modes
+
+function ccusage-set-cost-mode() {
+    local mode="$1"
+    
+    # Show help and current mode when called without arguments
+    if [[ -z "$mode" ]]; then
+        echo "Usage: ccusage-set-cost-mode <mode>"
+        echo ""
+        echo "Available modes:"
+        echo "  active  - Show current active block cost (default)"
+        echo "  daily   - Show today's total cost"
+        echo "  monthly - Show current month's total cost"
+        echo ""
+        echo "Current mode: ${CCUSAGE_COST_MODE:-active}"
+        return 0
+    fi
+    
+    # Validate the provided mode
+    case "$mode" in
+        active|daily|monthly)
+            # Valid mode - update the environment variable
+            export CCUSAGE_COST_MODE="$mode"
+            echo "Cost mode set to: $mode"
+            
+            # Trigger a refresh to show the new mode immediately
+            if (( $+functions[ccusage-refresh] )); then
+                ccusage-refresh
+            fi
+            ;;
+        *)
+            # Invalid mode - show error and help
+            echo "Error: Invalid mode '$mode'"
+            echo ""
+            echo "Available modes: active, daily, monthly"
+            echo "Current mode: ${CCUSAGE_COST_MODE:-active}"
+            return 1
+            ;;
+    esac
+}
