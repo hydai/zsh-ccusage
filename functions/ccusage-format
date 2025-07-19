@@ -14,7 +14,19 @@ function ccusage_format_display() {
     local is_stale=${3:-false}
     
     # Get terminal width for compact mode detection
-    local term_width=$COLUMNS
+    # Try multiple methods to ensure we get the width
+    local term_width
+    if [[ -n "$COLUMNS" ]]; then
+        term_width=$COLUMNS
+    elif command -v tput >/dev/null 2>&1; then
+        term_width=$(tput cols 2>/dev/null)
+    else
+        # Fallback to stty if available
+        term_width=$(stty size 2>/dev/null | cut -d' ' -f2)
+    fi
+    
+    # Default to 80 if we couldn't detect
+    term_width=${term_width:-80}
     
     # Apply color based on percentage
     local color=$(ccusage_get_color "$percentage")
@@ -36,11 +48,13 @@ function ccusage_format_display() {
         local display="${format//\$cost/\$$cost}"
         display="${display//\$percentage/${color}${percentage}%${CCUSAGE_COLOR_RESET}}"
         echo "${display}${stale_indicator}"
-    elif [[ -n "$term_width" ]] && (( term_width < 80 )); then
+    elif (( term_width < 80 )); then
         # Compact format for narrow terminals
+        # Format: $45.23|35%
         echo "\$${cost}|${color}${percentage}%${CCUSAGE_COLOR_RESET}${stale_indicator}"
     else
-        # Default format with brackets and spacing
+        # Default format with brackets and spacing for wider terminals
+        # Format: [$45.23 | 35%]
         echo "[\$${cost} | ${color}${percentage}%${CCUSAGE_COLOR_RESET}]${stale_indicator}"
     fi
 }
