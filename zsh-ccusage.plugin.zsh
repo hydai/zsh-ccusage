@@ -13,6 +13,7 @@ CCUSAGE_PLUGIN_DIR="${0:A:h}"
 source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-format"
 source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-fetch"
 source "${CCUSAGE_PLUGIN_DIR}/lib/parser.zsh"
+source "${CCUSAGE_PLUGIN_DIR}/lib/cache.zsh"
 
 # Initialize plugin
 function ccusage_init() {
@@ -25,14 +26,34 @@ function ccusage_init() {
 
 # Display function - returns formatted cost information
 function ccusage_display() {
-    # Fetch active block data
-    local block_json=$(ccusage_fetch_active_block)
-    local cost=$(ccusage_parse_block_cost "$block_json")
+    local cost percentage
+    local cache_key_block="active_block"
+    local cache_key_daily="daily_usage"
     
-    # Fetch daily usage data
-    local daily_json=$(ccusage_fetch_daily)
+    # Try to get cached active block data
+    local block_json=$(ccusage_cache_get "$cache_key_block")
+    if [[ -z "$block_json" ]]; then
+        # Cache miss - fetch fresh data
+        block_json=$(ccusage_fetch_active_block)
+        # Cache the result if it's not an error
+        if [[ ! "$block_json" =~ '"error"' ]]; then
+            ccusage_cache_set "$cache_key_block" "$block_json"
+        fi
+    fi
+    cost=$(ccusage_parse_block_cost "$block_json")
+    
+    # Try to get cached daily usage data
+    local daily_json=$(ccusage_cache_get "$cache_key_daily")
+    if [[ -z "$daily_json" ]]; then
+        # Cache miss - fetch fresh data
+        daily_json=$(ccusage_fetch_daily)
+        # Cache the result if it's not an error
+        if [[ ! "$daily_json" =~ '"error"' ]]; then
+            ccusage_cache_set "$cache_key_daily" "$daily_json"
+        fi
+    fi
     local daily_limit=${CCUSAGE_DAILY_LIMIT:-200}
-    local percentage=$(ccusage_parse_daily_percentage "$daily_json" "$daily_limit")
+    percentage=$(ccusage_parse_daily_percentage "$daily_json" "$daily_limit")
     
     # Format and display the data
     ccusage_format_display "$cost" "$percentage"
