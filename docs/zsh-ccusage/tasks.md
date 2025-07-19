@@ -55,7 +55,7 @@
   - Skip updates when disabled
   - _Requirements: R3
 
-- [ ] 9. Create manual refresh command
+- [x] 9. Create manual refresh command
   - Implement functions/ccusage-refresh command
   - Clear cache and force data refresh
   - Update prompt immediately with new data
