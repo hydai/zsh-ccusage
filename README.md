@@ -97,7 +97,7 @@ The plugin can be configured using environment variables. Add these to your `.zs
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `CCUSAGE_AUTO_UPDATE` | `true` | Enable/disable automatic updates on each command |
-| `CCUSAGE_UPDATE_INTERVAL` | `300` | Cache duration in seconds (5 minutes) |
+| `CCUSAGE_UPDATE_INTERVAL` | `30` | Cache duration in seconds (30 seconds) |
 | `CCUSAGE_DAILY_LIMIT` | `200` | Daily cost limit in dollars for percentage calculation |
 | `CCUSAGE_DISPLAY_FORMAT` | `[$%.2f \| %d%%]` | Custom display format (printf-style) |
 | `CCUSAGE_CACHE_DIR` | `$HOME/.cache/zsh-ccusage` | Directory for cache files |
@@ -108,8 +108,8 @@ The plugin can be configured using environment variables. Add these to your `.zs
 # Disable automatic updates
 export CCUSAGE_AUTO_UPDATE=false
 
-# Update every 10 minutes
-export CCUSAGE_UPDATE_INTERVAL=600
+# Update every 2 minutes (default is 30 seconds)
+export CCUSAGE_UPDATE_INTERVAL=120
 
 # Set daily limit to $100
 export CCUSAGE_DAILY_LIMIT=100

@@ -6,8 +6,8 @@
 typeset -gA CCUSAGE_CACHE
 typeset -gA CCUSAGE_CACHE_TIME
 
-# Default cache duration (5 minutes = 300 seconds)
-CCUSAGE_CACHE_DURATION=${CCUSAGE_UPDATE_INTERVAL:-300}
+# Default cache duration (30 seconds)
+CCUSAGE_CACHE_DURATION=${CCUSAGE_UPDATE_INTERVAL:-30}
 
 # Use zsh's built-in $EPOCHSECONDS for performance
 # This avoids spawning external date processes
