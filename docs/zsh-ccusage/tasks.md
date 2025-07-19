@@ -27,7 +27,7 @@
   - Return 0.00 for empty/no active blocks
   - _Requirements: R1
 
-- [ ] 5. Add daily usage fetching and percentage calculation
+- [x] 5. Add daily usage fetching and percentage calculation
   - Implement ccusage_fetch_daily in functions/ccusage-fetch
   - Auto-calculate today's date in YYYYMMDD format
   - Parse response and calculate percentage against $200 limit
