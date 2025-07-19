@@ -97,7 +97,7 @@
   - Test with different shell configurations
   - _Requirements: Success Metrics
 
-- [ ] 15. Create README with installation instructions
+- [x] 15. Create README with installation instructions
   - Document plugin installation for oh-my-zsh, prezto, zinit
   - List all configuration options with examples
   - Include troubleshooting section
