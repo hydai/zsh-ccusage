@@ -132,7 +132,7 @@
   - Handle CCUSAGE_PLAN_LIMIT configuration (default: 200)
   - _Requirements: R6, R7
 
-- [ ] 20. Update display formatter for percentage modes
+- [x] 20. Update display formatter for percentage modes
   - Modify ccusage_format_display to include mode indicator
   - Display as XXX%D for daily_avg, XXX%P for daily_plan, XXX%M for monthly
   - Maintain existing color coding based on percentage value
