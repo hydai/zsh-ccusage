@@ -209,7 +209,7 @@
   - Parse total cost from response
   - _Requirements: R9
 
-- [ ] 31. Create cost mode data router
+- [x] 31. Create cost mode data router
   - Implement ccusage_get_cost_by_mode function
   - Route to appropriate fetcher based on CCUSAGE_COST_MODE
   - Return cost value and mode indicator

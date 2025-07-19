@@ -284,3 +284,95 @@ function ccusage_parse_daily_cost() {
     # Format to 2 decimal places using zsh arithmetic
     printf "%.2f" "$total_cost" 2>/dev/null || echo "0.00"
 }
+
+# Get cost based on configured cost mode
+# Input: none (uses CCUSAGE_COST_MODE environment variable)
+# Output: Array with two elements: cost_value mode_indicator
+# Example: ("45.23" "A") for active mode
+function ccusage_get_cost_by_mode() {
+    # Get configuration
+    local mode="${CCUSAGE_COST_MODE:-active}"
+    
+    # Validate mode, fall back to active if invalid
+    case "$mode" in
+        active|daily|monthly) ;;
+        *) mode="active" ;;
+    esac
+    
+    local cost="0.00"
+    local mode_indicator=""
+    local json_data=""
+    local cache_key=""
+    
+    # Route to appropriate fetcher based on mode
+    case "$mode" in
+        active)
+            mode_indicator="A"
+            cache_key="cost_active"
+            
+            # Try cache first
+            json_data=$(ccusage_cache_get "$cache_key")
+            
+            # If no cached data, fetch it
+            if [[ -z "$json_data" ]]; then
+                json_data=$(ccusage_fetch_active_block)
+                # Cache the result if successful
+                if [[ -n "$json_data" ]] && [[ "$json_data" != *'"error"'* ]]; then
+                    ccusage_cache_set "$cache_key" "$json_data"
+                fi
+            fi
+            
+            # Parse the cost
+            if [[ -n "$json_data" ]]; then
+                cost=$(ccusage_parse_block_cost "$json_data")
+            fi
+            ;;
+            
+        daily)
+            mode_indicator="D"
+            cache_key="cost_daily"
+            
+            # Try cache first
+            json_data=$(ccusage_cache_get "$cache_key")
+            
+            # If no cached data, fetch it
+            if [[ -z "$json_data" ]]; then
+                json_data=$(ccusage_fetch_daily_cost)
+                # Cache the result if successful
+                if [[ -n "$json_data" ]] && [[ "$json_data" != *'"error"'* ]]; then
+                    ccusage_cache_set "$cache_key" "$json_data"
+                fi
+            fi
+            
+            # Parse the cost
+            if [[ -n "$json_data" ]]; then
+                cost=$(ccusage_parse_daily_cost "$json_data")
+            fi
+            ;;
+            
+        monthly)
+            mode_indicator="M"
+            cache_key="cost_monthly"
+            
+            # Try cache first
+            json_data=$(ccusage_cache_get "$cache_key")
+            
+            # If no cached data, fetch it
+            if [[ -z "$json_data" ]]; then
+                json_data=$(ccusage_fetch_monthly_cost)
+                # Cache the result if successful
+                if [[ -n "$json_data" ]] && [[ "$json_data" != *'"error"'* ]]; then
+                    ccusage_cache_set "$cache_key" "$json_data"
+                fi
+            fi
+            
+            # Parse the cost
+            if [[ -n "$json_data" ]]; then
+                cost=$(ccusage_parse_monthly_cost "$json_data")
+            fi
+            ;;
+    esac
+    
+    # Return array with cost and mode indicator
+    echo "$cost" "$mode_indicator"
+}
