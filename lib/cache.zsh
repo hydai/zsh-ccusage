@@ -9,6 +9,10 @@ typeset -gA CCUSAGE_CACHE_TIME
 # Default cache duration (5 minutes = 300 seconds)
 CCUSAGE_CACHE_DURATION=${CCUSAGE_UPDATE_INTERVAL:-300}
 
+# Use zsh's built-in $EPOCHSECONDS for performance
+# This avoids spawning external date processes
+zmodload -F zsh/datetime +EPOCHSECONDS 2>/dev/null || true
+
 # Store data in cache with timestamp
 # Input: key, value
 function ccusage_cache_set() {
@@ -18,8 +22,8 @@ function ccusage_cache_set() {
     # Store the value
     CCUSAGE_CACHE[$key]=$value
     
-    # Store current timestamp
-    CCUSAGE_CACHE_TIME[$key]=$(date +%s)
+    # Store current timestamp using built-in EPOCHSECONDS
+    CCUSAGE_CACHE_TIME[$key]=$EPOCHSECONDS
 }
 
 # Retrieve cached data if still valid
@@ -36,7 +40,7 @@ function ccusage_cache_get() {
     
     # Get cache timestamp
     local cache_time=${CCUSAGE_CACHE_TIME[$key]:-0}
-    local current_time=$(date +%s)
+    local current_time=$EPOCHSECONDS
     local age=$((current_time - cache_time))
     
     # Check if cache is still fresh
@@ -88,7 +92,7 @@ function ccusage_cache_age() {
     fi
     
     local cache_time=${CCUSAGE_CACHE_TIME[$key]}
-    local current_time=$(date +%s)
+    local current_time=$EPOCHSECONDS
     echo $((current_time - cache_time))
 }
 

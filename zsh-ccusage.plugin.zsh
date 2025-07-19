@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 
-# ZSH CCUsage Plugin
+# ZSH CCUsage Plugin - Optimized Version
 # Displays real-time ccusage cost information in terminal prompt
 
 # Plugin version
@@ -9,34 +9,33 @@ CCUSAGE_VERSION="0.1.0"
 # Get plugin directory
 CCUSAGE_PLUGIN_DIR="${0:A:h}"
 
-# Source all required components
-source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-format"
-source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-fetch"
-source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-refresh"
-source "${CCUSAGE_PLUGIN_DIR}/lib/parser.zsh"
-source "${CCUSAGE_PLUGIN_DIR}/lib/cache.zsh"
-source "${CCUSAGE_PLUGIN_DIR}/lib/async.zsh"
+# Lazy loading flags
+typeset -g CCUSAGE_LOADED=false
+typeset -g CCUSAGE_COMPONENTS_LOADED=false
 
-# Initialize plugin
-function ccusage_init() {
-    # Initialize async system
-    ccusage_async_init
-    
-    # Set default display if not already in RPROMPT
-    if [[ ! "$RPROMPT" =~ "ccusage_display" ]]; then
-        # Add ccusage display to the left of existing RPROMPT content
-        RPROMPT='$(ccusage_display)'${RPROMPT:+" $RPROMPT"}
+# Function to load components on demand
+function ccusage_load_components() {
+    if [[ "$CCUSAGE_COMPONENTS_LOADED" == "false" ]]; then
+        # Source all required components
+        source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-format"
+        source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-fetch"
+        source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-refresh"
+        source "${CCUSAGE_PLUGIN_DIR}/lib/parser.zsh"
+        source "${CCUSAGE_PLUGIN_DIR}/lib/cache.zsh"
+        source "${CCUSAGE_PLUGIN_DIR}/lib/async.zsh"
+        
+        # Initialize async system
+        ccusage_async_init
+        
+        CCUSAGE_COMPONENTS_LOADED=true
     fi
-    
-    # Register precmd hook for automatic updates
-    # Remove any existing ccusage_precmd from precmd_functions to avoid duplicates
-    precmd_functions=(${precmd_functions[@]:#ccusage_precmd})
-    # Add our precmd function
-    precmd_functions+=(ccusage_precmd)
 }
 
 # Display function - returns formatted cost information
 function ccusage_display() {
+    # Ensure components are loaded
+    ccusage_load_components
+    
     local cost percentage
     local cache_key_block="active_block"
     local cache_key_daily="daily_usage"
@@ -48,9 +47,9 @@ function ccusage_display() {
         # Cache miss - fetch fresh data
         block_json=$(ccusage_fetch_active_block)
         # Check if we got an error
-        if [[ "$block_json" =~ '"error"' ]]; then
+        if [[ "$block_json" == *'"error"'* ]]; then
             # For network errors, try to use stale cache
-            if [[ "$block_json" =~ '"error_type"[[:space:]]*:[[:space:]]*"network"' ]]; then
+            if [[ "$block_json" == *'"error_type"'*':'*'"network"'* ]]; then
                 local stale_block=$(ccusage_cache_get_stale "$cache_key_block")
                 if [[ -n "$stale_block" ]]; then
                     block_json="$stale_block"
@@ -70,9 +69,9 @@ function ccusage_display() {
         # Cache miss - fetch fresh data
         daily_json=$(ccusage_fetch_daily)
         # Check if we got an error
-        if [[ "$daily_json" =~ '"error"' ]]; then
+        if [[ "$daily_json" == *'"error"'* ]]; then
             # For network errors, try to use stale cache
-            if [[ "$daily_json" =~ '"error_type"[[:space:]]*:[[:space:]]*"network"' ]]; then
+            if [[ "$daily_json" == *'"error_type"'*':'*'"network"'* ]]; then
                 local stale_daily=$(ccusage_cache_get_stale "$cache_key_daily")
                 if [[ -n "$stale_daily" ]]; then
                     daily_json="$stale_daily"
@@ -93,6 +92,9 @@ function ccusage_display() {
 
 # Precmd hook for automatic updates
 function ccusage_precmd() {
+    # Ensure components are loaded
+    ccusage_load_components
+    
     # Check if auto-update is enabled (default: true)
     local auto_update=${CCUSAGE_AUTO_UPDATE:-true}
     
@@ -107,6 +109,23 @@ function ccusage_precmd() {
             ccusage_async_update
         fi
     fi
+}
+
+# Initialize plugin
+function ccusage_init() {
+    # Set default display if not already in RPROMPT
+    if [[ ! "$RPROMPT" =~ "ccusage_display" ]]; then
+        # Add ccusage display to the left of existing RPROMPT content
+        RPROMPT='$(ccusage_display)'${RPROMPT:+" $RPROMPT"}
+    fi
+    
+    # Register precmd hook for automatic updates
+    # Remove any existing ccusage_precmd from precmd_functions to avoid duplicates
+    precmd_functions=(${precmd_functions[@]:#ccusage_precmd})
+    # Add our precmd function
+    precmd_functions+=(ccusage_precmd)
+    
+    CCUSAGE_LOADED=true
 }
 
 # Initialize the plugin

@@ -1,6 +1,7 @@
 #!/usr/bin/env zsh
 
-# JSON parsing utilities for zsh-ccusage plugin
+# Optimized JSON parsing utilities for zsh-ccusage plugin
+# Uses zsh built-in string manipulation to avoid spawning processes
 
 # Parse active block cost from JSON response
 # Input: JSON string from ccusage blocks command
@@ -15,34 +16,31 @@ function ccusage_parse_block_cost() {
     fi
     
     # Check if it's an error response
-    if [[ "$json_input" =~ '"error"' ]]; then
+    if [[ "$json_input" == *'"error"'* ]]; then
         echo "0.00"
         return 0
     fi
     
-    # Basic JSON validation
-    if ! ccusage_is_valid_json "$json_input"; then
+    # Check for empty blocks array
+    if [[ "$json_input" == *'"blocks"'*':'*'[]'* ]]; then
         echo "0.00"
         return 0
     fi
     
-    # Extract cost from the first active block
+    # Extract cost using zsh pattern matching
     # Look for pattern: "costUSD": <number>
-    local cost=$(echo "$json_input" | grep -o '"costUSD"[[:space:]]*:[[:space:]]*[0-9.]*' | head -1 | grep -o '[0-9.]*$')
+    local cost=""
+    if [[ "$json_input" =~ '"costUSD"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+        cost="${match[1]}"
+    fi
     
-    # If no cost found or empty blocks array, return 0.00
-    if [[ -z "$cost" ]] || [[ "$json_input" =~ '"blocks"[[:space:]]*:[[:space:]]*\[\]' ]]; then
+    # If no cost found, return 0.00
+    if [[ -z "$cost" ]]; then
         echo "0.00"
         return 0
     fi
     
-    # Validate numeric value
-    if ! [[ "$cost" =~ ^[0-9]+\.?[0-9]*$ ]]; then
-        echo "0.00"
-        return 0
-    fi
-    
-    # Format to 2 decimal places
+    # Format to 2 decimal places using zsh arithmetic
     printf "%.2f" "$cost" 2>/dev/null || echo "0.00"
 }
 
@@ -60,47 +58,39 @@ function ccusage_parse_daily_percentage() {
     fi
     
     # Check if it's an error response
-    if [[ "$json_input" =~ '"error"' ]]; then
+    if [[ "$json_input" == *'"error"'* ]]; then
         echo "0"
         return 0
     fi
     
-    # Basic JSON validation
-    if ! ccusage_is_valid_json "$json_input"; then
-        echo "0"
-        return 0
+    # Extract total cost using zsh pattern matching
+    local total_cost=""
+    
+    # First try to find in totals section
+    if [[ "$json_input" =~ '"totals"[^}]*"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+        total_cost="${match[1]}"
+    elif [[ "$json_input" =~ '"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+        # Fallback to any totalCost in the response
+        total_cost="${match[1]}"
     fi
     
-    # Extract total cost from daily totals
-    # Look for pattern in totals section: "totalCost": <number>
-    local total_cost=$(echo "$json_input" | grep -A10 '"totals"' | grep -o '"totalCost"[[:space:]]*:[[:space:]]*[0-9.]*' | head -1 | grep -o '[0-9.]*$')
-    
-    # If no cost found, try to get from first daily entry
-    if [[ -z "$total_cost" ]]; then
-        total_cost=$(echo "$json_input" | grep -o '"totalCost"[[:space:]]*:[[:space:]]*[0-9.]*' | head -1 | grep -o '[0-9.]*$')
-    fi
-    
-    # If still no cost found, return 0
+    # If no cost found, return 0
     if [[ -z "$total_cost" ]]; then
         echo "0"
         return 0
     fi
     
-    # Validate numeric value
-    if ! [[ "$total_cost" =~ ^[0-9]+\.?[0-9]*$ ]]; then
-        echo "0"
-        return 0
-    fi
-    
-    # Validate limit is numeric and positive
-    if ! [[ "$limit" =~ ^[0-9]+\.?[0-9]*$ ]] || (( $(echo "$limit <= 0" | bc -l) )); then
+    # Validate limit is numeric and positive using zsh arithmetic
+    if ! [[ "$limit" =~ ^[0-9]+\.?[0-9]*$ ]] || (( limit <= 0 )); then
         limit=200
     fi
     
-    # Calculate percentage
-    local percentage=$(awk -v cost="$total_cost" -v limit="$limit" 'BEGIN { printf "%.0f", (cost / limit) * 100 }' 2>/dev/null || echo "0")
+    # Calculate percentage using zsh floating point arithmetic
+    local percentage
+    (( percentage = (total_cost * 100.0) / limit ))
+    percentage=${percentage%.*}  # Truncate to integer
     
-    # Cap at 100% for display purposes (actual usage can exceed limit)
+    # Cap at 100% for display purposes
     if (( percentage > 100 )); then
         echo "100"
     elif (( percentage < 0 )); then
@@ -117,7 +107,7 @@ function ccusage_is_valid_json() {
     local json_input=$1
     
     # Basic validation - check for required JSON structure
-    if [[ "$json_input" =~ ^\{.*\}$ ]] || [[ "$json_input" =~ ^\[.*\]$ ]]; then
+    if [[ "$json_input" == \{*\} ]] || [[ "$json_input" == \[*\] ]]; then
         return 0
     else
         return 1

@@ -83,14 +83,14 @@
   - Support CCUSAGE_DAILY_LIMIT (default: 200)
   - _Requirements: R3, R5
 
-- [ ] 13. Optimize for terminal width
+- [x] 13. Optimize for terminal width
   - Detect terminal width for compact mode
   - Use "$45.23|35%" format for width < 80
   - Maintain readability in small terminals
   - Test with various terminal sizes
   - _Requirements: R5
 
-- [ ] 14. Add performance optimizations
+- [x] 14. Add performance optimizations
   - Ensure plugin loads in <100ms
   - Profile and optimize slow operations
   - Minimize impact on shell startup
