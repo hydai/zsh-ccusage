@@ -28,8 +28,7 @@ function ccusage_format_display() {
     # Default to 80 if we couldn't detect
     term_width=${term_width:-80}
     
-    # Apply color based on percentage
-    local color=$(ccusage_get_color "$percentage")
+    # We'll colorize the percentage part later
     
     # Get percentage mode for suffix
     local mode="${CCUSAGE_PERCENTAGE_MODE:-daily_avg}"
@@ -51,21 +50,22 @@ function ccusage_format_display() {
     local format="${CCUSAGE_DISPLAY_FORMAT:-}"
     
     # Build the display string
+    # Colorize the percentage part
+    local colored_percentage=$(ccusage_colorize "${percentage}%%${mode_suffix}" "$percentage")
+    
     if [[ -n "$format" ]]; then
         # User-defined format
         # Replace placeholders: $cost, $percentage
         local display="${format//\$cost/\$$cost}"
-        display="${display//\$percentage/${percentage}%%${mode_suffix}}"
+        display="${display//\$percentage/${colored_percentage}}"
         echo -n "${display}${stale_indicator}"
     elif (( term_width < 80 )); then
         # Compact format for narrow terminals
         # Format: $45.23|35%D
-        # Escape the percentage sign to prevent ZSH prompt expansion issues
-        echo -n "\$${cost}|${percentage}%%${mode_suffix}${stale_indicator}"
+        echo -n "\$${cost}|${colored_percentage}${stale_indicator}"
     else
         # Default format with brackets and spacing for wider terminals
         # Format: [$45.23 | 35%D]
-        # Escape the percentage sign to prevent ZSH prompt expansion issues
-        echo -n "[\$${cost} | ${percentage}%%${mode_suffix}]${stale_indicator}"
+        echo -n "[\$${cost} | ${colored_percentage}]${stale_indicator}"
     fi
 }
