@@ -13,7 +13,7 @@
   - Test with different percentage values
   - _Requirements: R5
 
-- [ ] 3. Add fetching for active block cost
+- [x] 3. Add fetching for active block cost
   - Create functions/ccusage-fetch with ccusage_fetch_active_block
   - Execute npx ccusage@latest blocks --active --json
   - Return raw JSON response or error
