@@ -9,6 +9,10 @@ A lightweight ZSH plugin that displays real-time AI usage costs from the `ccusag
 
 The zsh-ccusage plugin helps developers monitor their AI usage costs in real-time by displaying the current active block cost and daily usage percentage in the terminal prompt. It prevents exceeding block limits by providing visual feedback with color-coded indicators.
 
+## Demo
+
+![ZSH CCUsage Plugin Demo](demo.gif)
+
 ### Display Examples
 
 | Cost Mode | Percentage Mode | Display | Description |
