@@ -77,7 +77,7 @@
   - Ensure backward compatibility maintained
   - _Requirements: R4
 
-- [ ] 12. Add cache retrieval helper function
+- [x] 12. Add cache retrieval helper function
   - Add `ccusage_cache_get_with_fallback()` to `lib/cache.zsh`
   - Implement fresh cache lookup with stale fallback
   - Set appropriate flags (is_stale, has_error)

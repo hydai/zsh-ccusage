@@ -140,3 +140,47 @@ function ccusage_cache_get_stale() {
     
     return 1
 }
+
+# Get cache data with automatic stale fallback
+# Parameters:
+#   $1 - cache_key: Cache key to retrieve
+#   $2 - result_var: Variable name to store result (passed by reference)
+#   $3 - is_stale_var: Variable name for stale flag (passed by reference)
+#   $4 - has_error_var: Variable name for error flag (passed by reference)
+# Usage:
+#   local data is_stale has_error
+#   ccusage_cache_get_with_fallback "key" data is_stale has_error
+function ccusage_cache_get_with_fallback() {
+    local cache_key=$1
+    local result_var=$2
+    local is_stale_var=$3
+    local has_error_var=$4
+    
+    # Initialize flags
+    eval "$is_stale_var=false"
+    eval "$has_error_var=false"
+    
+    # Try fresh cache first
+    local cache_data=$(ccusage_cache_get "$cache_key")
+    
+    if [[ -n "$cache_data" ]]; then
+        # Fresh cache hit
+        eval "$result_var=\$cache_data"
+        return 0
+    fi
+    
+    # Fresh cache miss, try stale cache
+    cache_data=$(ccusage_cache_get_stale "$cache_key")
+    
+    if [[ -n "$cache_data" ]]; then
+        # Stale cache hit
+        eval "$result_var=\$cache_data"
+        eval "$is_stale_var=true"
+        return 0
+    fi
+    
+    # Complete cache miss
+    eval "$result_var=''"
+    eval "$has_error_var=true"
+    return 1
+}
