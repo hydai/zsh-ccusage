@@ -49,7 +49,7 @@
   - Verify performance improvement with time measurements
   - _Requirements: R2
 
-- [ ] 8. Update plugin to use date utilities
+- [x] 8. Update plugin to use date utilities
   - Replace direct date calls in `zsh-ccusage.plugin.zsh` with utility functions
   - Update `lib/async.zsh` to use cached dates
   - Update `lib/parser.zsh` date generation
