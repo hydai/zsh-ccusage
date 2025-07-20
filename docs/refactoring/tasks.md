@@ -28,7 +28,7 @@
   - Test plugin reload with `source zsh-ccusage.plugin.zsh`
   - _Requirements: R1
 
-- [ ] 5. Refactor first fetch function to use error handler
+- [x] 5. Refactor first fetch function to use error handler
   - Update `ccusage_fetch_active_block()` in `functions/ccusage-fetch`
   - Replace npx check with `ccusage_check_npx()` call
   - Replace error handling with `ccusage_handle_fetch_error()` call
