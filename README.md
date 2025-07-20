@@ -11,27 +11,27 @@ The zsh-ccusage plugin helps developers monitor their AI usage costs in real-tim
 
 ### Display Examples
 
-| Mode | Display | Description |
-|------|---------|-------------|
-| Daily Average | `[$45.23 | 35%D]` | Currently at 35% of daily budget |
-| Daily Plan | `[$45.23 | 22%P]` | Used 22% of monthly plan today |
-| Monthly | `[$45.23 | 185%M]` | At 185% of monthly plan limit |
+| Cost Mode | Percentage Mode | Display | Description |
+|-----------|-----------------|---------|-------------|
+| Active | Daily Average | `[$45.23A | 35%D]` | Active block at 35% of daily budget |
+| Daily | Daily Plan | `[$20.45D | 22%P]` | Today's total is 22% of monthly plan |
+| Monthly | Monthly | `[$1800.00M | 185%M]` | Monthly total at 185% of plan limit |
 
 ### Visual Examples
 
 The plugin provides different visual states based on your usage:
 
 ```
-[$12.50 | 45%D]   # Green - Well within daily average
-[$22.00 | 85%P]   # Yellow - Approaching limit warning
-[$180.00 | 120%M] # Red/Bold - Exceeded monthly limit
-[$22.00* | 85%*]  # Asterisk - Using cached data
-$12.50|45%        # Compact - For narrow terminals
+[$12.50A | 45%D]   # Green - Active block, within daily average
+[$22.00D | 85%P]   # Yellow - Daily total, approaching plan limit
+[$180.00M | 120%M] # Red/Bold - Monthly total, exceeded limit
+[$22.00D* | 85%*]  # Asterisk - Using cached data
+$12.50A|45%D       # Compact - For narrow terminals
 ```
 
 ## Features
 
-- 🚀 **Real-time cost display** - Shows current active block cost
+- 🚀 **Multiple cost display modes** - Active block, daily total, or monthly total
 - 📊 **Multiple percentage modes** - Daily average, daily plan, or monthly tracking
 - 🎨 **Color-coded indicators** - Green (<80%), Yellow (80-99%), Red (≥100%)
 - ⚡ **Async updates** - Non-blocking data fetching
@@ -118,6 +118,7 @@ The plugin can be configured using environment variables. Add these to your `.zs
 | `CCUSAGE_UPDATE_INTERVAL` | `30` | Cache duration in seconds (30 seconds) |
 | `CCUSAGE_PLAN_LIMIT` | `200` | Monthly plan limit in USD for percentage calculations |
 | `CCUSAGE_PERCENTAGE_MODE` | `daily_avg` | Percentage calculation mode (see below) |
+| `CCUSAGE_COST_MODE` | `active` | Cost display mode (see below) |
 | `CCUSAGE_DISPLAY_FORMAT` | `[$%.2f \| %d%%]` | Custom display format (printf-style) |
 | `CCUSAGE_CACHE_DIR` | `$HOME/.cache/zsh-ccusage` | Directory for cache files |
 | `CCUSAGE_DAILY_LIMIT` | - | **Deprecated** - Use `CCUSAGE_PLAN_LIMIT` instead |
@@ -167,6 +168,67 @@ export CCUSAGE_PERCENTAGE_MODE=monthly
 # Calculation: $150 / $200 = 75%
 ```
 
+### Cost Modes
+
+The `CCUSAGE_COST_MODE` variable controls which cost metric is displayed:
+
+- **`active`** (default): Shows the cost of the current active block
+  - Fetches using: `npx ccusage@latest blocks --active --json`
+  - Display suffix: 'A' (e.g., `$45.23A`)
+  - Use case: Monitor cost of current work session
+
+- **`daily`**: Shows today's total cost across all usage
+  - Fetches using: `npx ccusage@latest -s YYYYMMDD --json`
+  - Display suffix: 'D' (e.g., `$20.45D`)
+  - Use case: Track daily spending regardless of blocks
+
+- **`monthly`**: Shows current month's total cost
+  - Fetches using: `npx ccusage@latest monthly -s YYYYMM01 --json`
+  - Display suffix: 'M' (e.g., `$1800.00M`)
+  - Use case: Monitor overall monthly spending
+
+Each cost mode maintains its own cache to ensure fast switching between modes.
+
+#### Cost Mode Examples
+
+```bash
+# Show active block cost (default)
+export CCUSAGE_COST_MODE=active
+# Display: [$45.23A | 85%D]
+
+# Show daily total cost
+export CCUSAGE_COST_MODE=daily
+# Display: [$20.45D | 85%D]
+
+# Show monthly total cost
+export CCUSAGE_COST_MODE=monthly
+# Display: [$1800.00M | 85%D]
+```
+
+### Cost and Percentage Mode Combinations
+
+You can combine any cost mode with any percentage mode for maximum flexibility:
+
+```bash
+# Example 1: Monitor active block with monthly percentage
+export CCUSAGE_COST_MODE=active
+export CCUSAGE_PERCENTAGE_MODE=monthly
+# Display: [$45.23A | 900%M]
+# Shows: Current block cost is $45.23, monthly usage at 900% of plan
+
+# Example 2: Track daily cost with daily average percentage
+export CCUSAGE_COST_MODE=daily
+export CCUSAGE_PERCENTAGE_MODE=daily_avg
+# Display: [$20.45D | 310%D]
+# Shows: Today's total is $20.45, which is 310% of daily average
+
+# Example 3: View monthly cost with daily plan percentage
+export CCUSAGE_COST_MODE=monthly
+export CCUSAGE_PERCENTAGE_MODE=daily_plan
+# Display: [$1800.00M | 10%P]
+# Shows: Monthly total is $1800, today's usage is 10% of monthly plan
+```
+
 ### Example Configuration
 
 ```bash
@@ -175,10 +237,11 @@ export CCUSAGE_PLAN_LIMIT=200
 export CCUSAGE_PERCENTAGE_MODE=daily_avg
 source ~/zsh-ccusage/zsh-ccusage.plugin.zsh
 
-# Advanced Configuration - Monitor monthly total
+# Advanced Configuration - Monitor monthly totals
 export CCUSAGE_AUTO_UPDATE=true
 export CCUSAGE_UPDATE_INTERVAL=60
 export CCUSAGE_PLAN_LIMIT=500
+export CCUSAGE_COST_MODE=monthly
 export CCUSAGE_PERCENTAGE_MODE=monthly
 export CCUSAGE_DISPLAY_FORMAT="AI: $%.2f (%d%%M)"
 source ~/zsh-ccusage/zsh-ccusage.plugin.zsh
@@ -200,6 +263,7 @@ source ~/zsh-ccusage/zsh-ccusage.plugin.zsh
 **For Individual Developers:**
 ```bash
 # Track if you're on pace for your monthly budget
+export CCUSAGE_COST_MODE=active      # Monitor current work session
 export CCUSAGE_PERCENTAGE_MODE=daily_avg
 export CCUSAGE_PLAN_LIMIT=200
 ```
@@ -207,6 +271,7 @@ export CCUSAGE_PLAN_LIMIT=200
 **For Heavy Users:**
 ```bash
 # Monitor total monthly usage closely
+export CCUSAGE_COST_MODE=monthly     # See monthly totals
 export CCUSAGE_PERCENTAGE_MODE=monthly
 export CCUSAGE_PLAN_LIMIT=1000
 export CCUSAGE_UPDATE_INTERVAL=30  # Frequent updates
@@ -215,9 +280,19 @@ export CCUSAGE_UPDATE_INTERVAL=30  # Frequent updates
 **For Occasional Users:**
 ```bash
 # See daily usage as portion of monthly plan
+export CCUSAGE_COST_MODE=daily       # Track daily spending
 export CCUSAGE_PERCENTAGE_MODE=daily_plan
 export CCUSAGE_PLAN_LIMIT=100
 export CCUSAGE_AUTO_UPDATE=false  # Update manually
+```
+
+**For Team Environments:**
+```bash
+# Monitor both active work and monthly totals
+export CCUSAGE_COST_MODE=active      # Default to active blocks
+export CCUSAGE_PERCENTAGE_MODE=monthly # Compare to team budget
+export CCUSAGE_PLAN_LIMIT=5000       # Team monthly budget
+# Use ccusage-set-cost-mode to switch views as needed
 ```
 
 ## Usage
@@ -233,19 +308,37 @@ Force a refresh of the cost data:
 ccusage-refresh
 ```
 
+### Runtime Mode Switching
+
+Switch between cost modes without restarting your shell:
+```bash
+# Switch to daily cost mode
+ccusage-set-cost-mode daily
+
+# Switch to monthly cost mode
+ccusage-set-cost-mode monthly
+
+# Switch back to active block mode
+ccusage-set-cost-mode active
+
+# Show available modes and current mode
+ccusage-set-cost-mode
+```
+
 ### Display Format
 
-The plugin shows information in the format: `[cost | percentage]`
+The plugin shows information in the format: `[costMODE | percentageMODE]`
 
-- **Cost**: Current active block cost (e.g., $45.23)
-- **Percentage**: Usage percentage based on configured mode (e.g., 35%D, 50%P, 900%M)
+- **Cost**: Shows cost with mode suffix (e.g., $45.23A for active, $20.45D for daily, $1800.00M for monthly)
+- **Percentage**: Usage percentage with mode suffix (e.g., 35%D for daily avg, 50%P for daily plan, 900%M for monthly)
 
 #### Display States
 
-- `[$45.23 | 35%]` - Normal display with current data
-- `[$45.23* | 35%*]` - Asterisk indicates stale/cached data
-- `[$0.00 | 0%]` - No active blocks or usage
-- `$45.23|35%` - Compact format for narrow terminals (<80 chars)
+- `[$45.23A | 35%D]` - Normal display with current data
+- `[$45.23A* | 35%*]` - Asterisk indicates stale/cached data
+- `[$0.00A | 0%D]` - No active blocks or usage
+- `$45.23A|35%D` - Compact format for narrow terminals (<80 chars)
+- `$-.--D | 85%D]` - No data available for daily cost mode
 
 #### Color Coding
 
@@ -259,19 +352,35 @@ The plugin uses color coding to provide visual warnings about your usage:
 
 ```bash
 # Daily Average Mode (daily_avg)
-[$5.00 | 75%D]   # Green - On track for the month
-[$6.00 | 90%D]   # Yellow - Slightly above daily average
-[$10.00 | 150%D] # Red - Significantly over daily average
+[$5.00A | 75%D]   # Green - On track for the month
+[$6.00A | 90%D]   # Yellow - Slightly above daily average
+[$10.00A | 150%D] # Red - Significantly over daily average
 
 # Daily Plan Mode (daily_plan)
-[$150.00 | 75%P]  # Green - Used 75% of monthly plan today
-[$170.00 | 85%P]  # Yellow - High daily usage
-[$250.00 | 125%P] # Red - Exceeded monthly plan in one day
+[$150.00D | 75%P]  # Green - Used 75% of monthly plan today
+[$170.00D | 85%P]  # Yellow - High daily usage
+[$250.00D | 125%P] # Red - Exceeded monthly plan in one day
 
 # Monthly Mode (monthly)
-[$150.00 | 75%M]  # Green - 75% of monthly plan used
-[$170.00 | 85%M]  # Yellow - Approaching monthly limit
-[$250.00 | 125%M] # Red - Exceeded monthly plan
+[$150.00M | 75%M]  # Green - 75% of monthly plan used
+[$170.00M | 85%M]  # Yellow - Approaching monthly limit
+[$250.00M | 125%M] # Red - Exceeded monthly plan
+```
+
+**Cost Mode Display Examples:**
+
+```bash
+# Active Block Mode (shows current work session)
+[$45.23A | 85%D]   # Active block costing $45.23
+[$0.00A | 0%D]     # No active blocks
+
+# Daily Total Mode (shows today's total)
+[$120.50D | 60%P]  # Today's total is $120.50
+[$-.--D | 85%D]    # Daily data unavailable
+
+# Monthly Total Mode (shows month's total)
+[$1800.00M | 900%M] # Monthly total is $1800
+[$2500.00M* | 125%M*] # Using cached monthly data
 ```
 
 ## Migration Guide
@@ -336,6 +445,23 @@ export CCUSAGE_DISPLAY_FORMAT="[$%.2f]"
 
 - **Live data**: Fresh data fetched from the ccusage API
 - **Cached data (*)**: Previously fetched data shown when the cache is still valid or when the API is unavailable
+
+### Which cost mode should I use?
+
+- **Use `active`** to monitor your current work session costs in real-time
+- **Use `daily`** to track your total spending for today across all sessions
+- **Use `monthly`** to see your cumulative monthly costs
+
+### Can I see different cost modes simultaneously?
+
+Not in the same prompt, but you can quickly switch between modes using `ccusage-set-cost-mode` without restarting your shell. Each mode maintains its own cache for instant switching.
+
+### What do the mode suffixes mean?
+
+The suffixes help you identify which metrics you're viewing:
+- **Cost suffixes**: A (active), D (daily), M (monthly)
+- **Percentage suffixes**: D (daily average), P (daily plan), M (monthly)
+Example: `[$45.23A | 85%D]` shows active block cost with daily average percentage
 
 ## Troubleshooting
 

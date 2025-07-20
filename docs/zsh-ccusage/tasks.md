@@ -279,7 +279,7 @@
   - Check error handling scenarios
   - _Requirements: R9, R12, R14
 
-- [ ] 41. Update documentation for cost display modes
+- [x] 41. Update documentation for cost display modes
   - Document CCUSAGE_COST_MODE in README
   - Add examples for each cost mode
   - Show screenshots of different mode combinations
