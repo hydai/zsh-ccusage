@@ -22,6 +22,7 @@ Thumbs.db
 # Test files
 test-output/
 coverage/
+tests/archive/
 
 # Cache files
 .cache/
