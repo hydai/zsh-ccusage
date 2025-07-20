@@ -35,7 +35,7 @@
   - Test all error scenarios (success, timeout, network error)
   - _Requirements: R1
 
-- [ ] 6. Create date utilities module with caching
+- [x] 6. Create date utilities module with caching
   - Create `lib/date-utils.zsh` file
   - Define global cache variables (CCUSAGE_CACHED_TODAY, etc.)
   - Implement `ccusage_get_today()` with 60-second cache

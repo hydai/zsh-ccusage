@@ -15,7 +15,7 @@ typeset -g CCUSAGE_DATE_CACHE_TTL=60
 # Cache TTL: 60 seconds
 # Returns: Date string
 function ccusage_get_today() {
-    local current_time=$EPOCHSECONDS
+    local current_time=${EPOCHSECONDS:-$(date +%s)}
     local time_diff=$((current_time - CCUSAGE_LAST_DATE_CHECK))
     
     # Check if cache is still valid
@@ -35,7 +35,7 @@ function ccusage_get_today() {
 # Cache TTL: 60 seconds
 # Returns: Month string
 function ccusage_get_current_month() {
-    local current_time=$EPOCHSECONDS
+    local current_time=${EPOCHSECONDS:-$(date +%s)}
     local time_diff=$((current_time - CCUSAGE_LAST_DATE_CHECK))
     
     # Check if cache is still valid
