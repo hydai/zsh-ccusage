@@ -63,7 +63,7 @@
   - Update `ccusage_fetch_blocks()` to use error handler
   - _Requirements: R1
 
-- [ ] 10. Create JSON validation utilities module
+- [x] 10. Create JSON validation utilities module
   - Create `lib/json-utils.zsh` file
   - Implement `ccusage_validate_json_input()` function
   - Implement `ccusage_extract_error_message()` function

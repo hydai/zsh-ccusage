@@ -20,9 +20,8 @@ function ccusage_validate_json_input() {
         return 1
     fi
     
-    # Check for error field in JSON
-    # Using grep for pattern matching to avoid dependencies
-    if echo "$json_input" | grep -q '"error"'; then
+    # Check for error field in JSON using zsh pattern matching (no subprocess)
+    if [[ "$json_input" == *'"error"'* ]]; then
         echo "$default_value"
         return 1
     fi
