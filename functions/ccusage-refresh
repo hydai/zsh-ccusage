@@ -3,9 +3,25 @@
 # Manual refresh command for zsh-ccusage plugin
 # Clears cache and forces immediate update of cost display
 
+# Clear all cost mode caches specifically
+function ccusage_clear_all_cost_caches() {
+    local today=$(date +%Y%m%d)
+    local current_month=$(date +%Y%m)
+    
+    # Clear all cost mode caches
+    ccusage_cache_clear "cost_active"
+    ccusage_cache_clear "cost_daily_${today}"
+    ccusage_cache_clear "cost_monthly_${current_month}"
+    
+    # Clear percentage-related caches
+    ccusage_cache_clear "block_cost"
+    ccusage_cache_clear "daily_usage_${today}"
+    ccusage_cache_clear "monthly_total_${current_month}"
+}
+
 # Main refresh function
 function ccusage-refresh() {
-    echo "Refreshing ccusage data..."
+    echo "Refreshing all ccusage cost modes..."
     
     # Ensure async system is initialized
     if [[ -z "$CCUSAGE_ASYNC_TMPDIR" ]]; then
@@ -15,10 +31,17 @@ function ccusage-refresh() {
     # Cancel any running async job
     ccusage_async_cancel
     
-    # Clear all cached data to force fresh fetch
-    ccusage_cache_clear
+    # Clear all cost mode caches to force fresh fetch
+    ccusage_clear_all_cost_caches
+    
+    # Show progress indicator
+    echo "⟳ Fetching active block cost..."
+    echo "⟳ Fetching daily cost..."
+    echo "⟳ Fetching monthly cost..."
+    echo "⟳ Updating percentage data..."
     
     # Trigger async update immediately
+    # This will fetch all modes in parallel
     ccusage_async_update
     
     # For immediate feedback, also do a sync fetch for display
@@ -30,11 +53,12 @@ function ccusage-refresh() {
         zle reset-prompt
     else
         # If not in a ZLE widget, we need to print the result and suggest redraw
+        echo ""
         echo "Current usage: $result"
         echo "Press Enter to refresh your prompt with new data."
     fi
     
-    echo "✓ CCUsage data refresh initiated"
+    echo "✓ All cost modes refreshed successfully"
 }
 
 # Register as a ZLE widget for better integration
