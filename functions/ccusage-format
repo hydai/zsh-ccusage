@@ -33,12 +33,7 @@ function ccusage_format_display() {
     
     # Get percentage mode for suffix
     local mode="${CCUSAGE_PERCENTAGE_MODE:-daily_avg}"
-    case "$mode" in
-        daily_avg) local mode_suffix="D" ;;
-        daily_plan) local mode_suffix="P" ;;
-        monthly) local mode_suffix="M" ;;
-        *) local mode_suffix="D" ;;  # Fallback to daily_avg
-    esac
+    local mode_suffix=$(ccusage_get_mode_suffix "$mode")
     
     # Get cost mode for suffix
     local cost_suffix
@@ -47,12 +42,7 @@ function ccusage_format_display() {
     else
         # Fallback to determining from environment variable
         local cost_mode="${CCUSAGE_COST_MODE:-active}"
-        case "$cost_mode" in
-            active) cost_suffix="A" ;;
-            daily) cost_suffix="D" ;;
-            monthly) cost_suffix="M" ;;
-            *) cost_suffix="A" ;;  # Fallback to active
-        esac
+        cost_suffix=$(ccusage_get_mode_suffix "$cost_mode")
     fi
     
     # Add stale indicator if data is from cache

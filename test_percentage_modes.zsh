@@ -19,7 +19,7 @@ echo
 # Test 2: Switch to daily_plan mode
 echo "Test 2: Switching to daily_plan mode"
 export CCUSAGE_PERCENTAGE_MODE="daily_plan"
-ccusage_validate_percentage_mode
+ccusage_ensure_valid_percentage_mode
 echo "Current mode: ${CCUSAGE_PERCENTAGE_MODE}"
 ccusage-refresh
 sleep 2
@@ -29,7 +29,7 @@ echo
 # Test 3: Switch to monthly mode
 echo "Test 3: Switching to monthly mode"
 export CCUSAGE_PERCENTAGE_MODE="monthly"
-ccusage_validate_percentage_mode
+ccusage_ensure_valid_percentage_mode
 echo "Current mode: ${CCUSAGE_PERCENTAGE_MODE}"
 ccusage-refresh
 sleep 2
@@ -39,7 +39,7 @@ echo
 # Test 4: Invalid mode (should fall back to daily_avg)
 echo "Test 4: Setting invalid mode (should fall back to daily_avg)"
 export CCUSAGE_PERCENTAGE_MODE="invalid_mode"
-ccusage_validate_percentage_mode
+ccusage_ensure_valid_percentage_mode
 echo "Current mode: ${CCUSAGE_PERCENTAGE_MODE}"
 ccusage-refresh
 sleep 2

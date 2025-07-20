@@ -20,24 +20,21 @@ function ccusage-set-cost-mode() {
     fi
     
     # Validate the provided mode
-    case "$mode" in
-        active|daily|monthly)
-            # Valid mode - update the environment variable
-            export CCUSAGE_COST_MODE="$mode"
-            echo "Cost mode set to: $mode"
-            
-            # Trigger a refresh to show the new mode immediately
-            if (( $+functions[ccusage-refresh] )); then
-                ccusage-refresh
-            fi
-            ;;
-        *)
-            # Invalid mode - show error and help
-            echo "Error: Invalid mode '$mode'"
-            echo ""
-            echo "Available modes: active, daily, monthly"
-            echo "Current mode: ${CCUSAGE_COST_MODE:-active}"
-            return 1
-            ;;
-    esac
+    if ccusage_validate_mode "cost" "$mode" >/dev/null 2>&1; then
+        # Valid mode - update the environment variable
+        export CCUSAGE_COST_MODE="$mode"
+        echo "Cost mode set to: $mode"
+        
+        # Trigger a refresh to show the new mode immediately
+        if (( $+functions[ccusage-refresh] )); then
+            ccusage-refresh
+        fi
+    else
+        # Invalid mode - show error and help
+        echo "Error: Invalid mode '$mode'"
+        echo ""
+        echo "Available modes: ${CCUSAGE_VALID_MODES[cost]}"
+        echo "Current mode: ${CCUSAGE_COST_MODE:-active}"
+        return 1
+    fi
 }

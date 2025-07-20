@@ -152,11 +152,10 @@ function ccusage_calculate_percentage() {
     local mode="${CCUSAGE_PERCENTAGE_MODE:-daily_avg}"
     local plan_limit="${CCUSAGE_PLAN_LIMIT:-${CCUSAGE_DAILY_LIMIT:-200}}"
     
-    # Validate mode, fall back to daily_avg if invalid
-    case "$mode" in
-        daily_avg|daily_plan|monthly) ;;
-        *) mode="daily_avg" ;;
-    esac
+    # Ensure mode is valid using unified validation
+    if ! ccusage_validate_mode "percentage" "$mode" >/dev/null 2>&1; then
+        mode="$(ccusage_validate_mode "percentage" "$mode")"
+    fi
     
     # Validate numeric inputs
     if ! [[ "$daily_cost" =~ ^[0-9]+\.?[0-9]*$ ]]; then

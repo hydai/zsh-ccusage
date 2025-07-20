@@ -13,33 +13,8 @@ CCUSAGE_PLUGIN_DIR="${0:A:h}"
 : ${CCUSAGE_PERCENTAGE_MODE:="daily_avg"}  # daily_avg, daily_plan, or monthly
 : ${CCUSAGE_COST_MODE:="active"}           # active, daily, or monthly
 
-# Validate percentage mode configuration
-function ccusage_validate_percentage_mode() {
-    local mode="${CCUSAGE_PERCENTAGE_MODE}"
-    case "$mode" in
-        daily_avg|daily_plan|monthly)
-            # Valid mode, keep it
-            ;;
-        *)
-            # Invalid mode, fall back to default
-            CCUSAGE_PERCENTAGE_MODE="daily_avg"
-            ;;
-    esac
-}
-
-# Validate cost mode configuration
-function ccusage_validate_cost_mode() {
-    local mode="${CCUSAGE_COST_MODE}"
-    case "$mode" in
-        active|daily|monthly)
-            # Valid mode, keep it
-            ;;
-        *)
-            # Invalid mode, fall back to default
-            CCUSAGE_COST_MODE="active"
-            ;;
-    esac
-}
+# Load validation functions (will be loaded with other components)
+# The validation functions are now in lib/validation.zsh
 
 # Detect plugin manager / framework
 function ccusage_detect_framework() {
@@ -79,6 +54,7 @@ function ccusage_load_components() {
         fpath=("${CCUSAGE_PLUGIN_DIR}/functions" $fpath)
         
         # Source all required components
+        source "${CCUSAGE_PLUGIN_DIR}/lib/validation.zsh"
         source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-format"
         source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-fetch"
         source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-refresh"
@@ -229,9 +205,12 @@ function ccusage_precmd() {
 
 # Initialize plugin
 function ccusage_init() {
+    # Load components first if not already loaded
+    ccusage_load_components
+    
     # Validate configuration
-    ccusage_validate_percentage_mode
-    ccusage_validate_cost_mode
+    ccusage_ensure_valid_percentage_mode
+    ccusage_ensure_valid_cost_mode
     
     # Framework-specific initialization
     case "$CCUSAGE_FRAMEWORK" in
