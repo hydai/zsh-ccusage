@@ -84,7 +84,7 @@
   - Test all cache scenarios
   - _Requirements: R3
 
-- [ ] 13. Refactor parser cache retrieval logic
+- [x] 13. Refactor parser cache retrieval logic
   - Update `ccusage_get_cost_by_mode()` to use cache helper
   - Remove duplicate cache retrieval code
   - Test all three modes (active_block, daily, monthly)

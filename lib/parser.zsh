@@ -293,19 +293,8 @@ function ccusage_get_cost_by_mode() {
             mode_indicator="A"
             cache_key="cost_active"
             
-            # Try cache first
-            json_data=$(ccusage_cache_get "$cache_key")
-            
-            # If no cached data, try stale cache
-            if [[ -z "$json_data" ]]; then
-                json_data=$(ccusage_cache_get_stale "$cache_key")
-                if [[ -n "$json_data" ]]; then
-                    is_stale="true"
-                else
-                    # No cache available at all
-                    has_error="true"
-                fi
-            fi
+            # Use unified cache retrieval helper
+            ccusage_cache_get_with_fallback "$cache_key" json_data is_stale has_error
             
             # Parse the cost
             if [[ -n "$json_data" ]] && [[ "$json_data" != *'"error"'* ]]; then
@@ -322,19 +311,8 @@ function ccusage_get_cost_by_mode() {
             local today=$(ccusage_get_today)
             cache_key="cost_daily_${today}"
             
-            # Try cache first
-            json_data=$(ccusage_cache_get "$cache_key")
-            
-            # If no cached data, try stale cache
-            if [[ -z "$json_data" ]]; then
-                json_data=$(ccusage_cache_get_stale "$cache_key")
-                if [[ -n "$json_data" ]]; then
-                    is_stale="true"
-                else
-                    # No cache available at all
-                    has_error="true"
-                fi
-            fi
+            # Use unified cache retrieval helper
+            ccusage_cache_get_with_fallback "$cache_key" json_data is_stale has_error
             
             # Parse the cost
             if [[ -n "$json_data" ]] && [[ "$json_data" != *'"error"'* ]]; then
@@ -351,19 +329,8 @@ function ccusage_get_cost_by_mode() {
             local current_month=$(ccusage_get_current_month)
             cache_key="cost_monthly_${current_month}"
             
-            # Try cache first
-            json_data=$(ccusage_cache_get "$cache_key")
-            
-            # If no cached data, try stale cache
-            if [[ -z "$json_data" ]]; then
-                json_data=$(ccusage_cache_get_stale "$cache_key")
-                if [[ -n "$json_data" ]]; then
-                    is_stale="true"
-                else
-                    # No cache available at all
-                    has_error="true"
-                fi
-            fi
+            # Use unified cache retrieval helper
+            ccusage_cache_get_with_fallback "$cache_key" json_data is_stale has_error
             
             # Parse the cost
             if [[ -n "$json_data" ]] && [[ "$json_data" != *'"error"'* ]]; then
