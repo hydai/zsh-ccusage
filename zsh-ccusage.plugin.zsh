@@ -57,6 +57,7 @@ function ccusage_load_components() {
         source "${CCUSAGE_PLUGIN_DIR}/lib/validation.zsh"
         source "${CCUSAGE_PLUGIN_DIR}/lib/error-handler.zsh"
         source "${CCUSAGE_PLUGIN_DIR}/lib/date-utils.zsh"
+        source "${CCUSAGE_PLUGIN_DIR}/lib/json-utils.zsh"
         source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-format"
         source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-fetch"
         source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-refresh"

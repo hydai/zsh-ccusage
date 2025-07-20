@@ -56,7 +56,7 @@
   - Verify dates remain consistent across components
   - _Requirements: R2
 
-- [ ] 9. Refactor remaining fetch functions
+- [x] 9. Refactor remaining fetch functions
   - Update `ccusage_fetch_block_history()` to use error handler
   - Update `ccusage_fetch_daily_cost()` to use error handler
   - Update `ccusage_fetch_monthly_cost()` to use error handler  
