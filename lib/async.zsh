@@ -43,6 +43,7 @@ function ccusage_async_update() {
         # Source required functions in subshell
         source "${CCUSAGE_PLUGIN_DIR}/functions/ccusage-fetch" 2>/dev/null
         source "${CCUSAGE_PLUGIN_DIR}/lib/cache.zsh" 2>/dev/null
+        source "${CCUSAGE_PLUGIN_DIR}/lib/date-utils.zsh" 2>/dev/null
         
         # Create result files
         local block_file="$CCUSAGE_ASYNC_TMPDIR/block.json"
@@ -73,8 +74,8 @@ function ccusage_async_update() {
         fi
         
         # Fetch cost data for all modes (only expired caches)
-        local today=$(date '+%Y%m%d')
-        local current_month=$(date '+%Y%m')
+        local today=$(ccusage_get_today)
+        local current_month=$(ccusage_get_current_month)
         
         # Check which cost mode caches need updating
         local fetch_cost_active=false

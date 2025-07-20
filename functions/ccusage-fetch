@@ -30,7 +30,7 @@ function ccusage_fetch_active_block() {
 # Input: date in YYYYMMDD format (optional, defaults to today)
 # Output: JSON string or error message
 function ccusage_fetch_daily() {
-    local date=${1:-$(date +%Y%m%d)}
+    local date=${1:-$(ccusage_get_today)}
     
     # Check if npx is available
     if ! command -v npx &> /dev/null; then
@@ -127,7 +127,7 @@ function ccusage_fetch_monthly() {
 # Input: date in YYYYMMDD format (optional, defaults to today)
 # Output: JSON string or error message
 function ccusage_fetch_daily_cost() {
-    local date=${1:-$(date +%Y%m%d)}
+    local date=${1:-$(ccusage_get_today)}
     
     # Check if npx is available
     if ! command -v npx &> /dev/null; then
@@ -177,7 +177,7 @@ function ccusage_fetch_daily_cost() {
 # Input: month in YYYYMM format (optional, defaults to current month)
 # Output: JSON string or error message
 function ccusage_fetch_monthly_cost() {
-    local month=${1:-$(date +%Y%m)}
+    local month=${1:-$(ccusage_get_current_month)}
     local month_start="${month}01"
     
     # Check if npx is available

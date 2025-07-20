@@ -79,7 +79,7 @@ typeset -g CCUSAGE_LAST_DISPLAY_TIME=0
 # Display function - returns formatted cost information
 function ccusage_display() {
     # Quick cache check - return last result if very recent (within 1 second)
-    local current_time=$EPOCHSECONDS
+    local current_time=${EPOCHSECONDS:-$(date +%s)}
     if [[ -n "$CCUSAGE_LAST_DISPLAY_CACHE" ]] && (( current_time - CCUSAGE_LAST_DISPLAY_TIME < 1 )); then
         echo -n "$CCUSAGE_LAST_DISPLAY_CACHE"
         return
@@ -88,9 +88,9 @@ function ccusage_display() {
     # Ensure components are loaded
     ccusage_load_components
     
-    # Pre-generate cache keys once
-    local today=$(date '+%Y%m%d')
-    local current_month=$(date '+%Y%m')
+    # Pre-generate cache keys once using cached date utilities
+    local today=$(ccusage_get_today)
+    local current_month=$(ccusage_get_current_month)
     local cache_key_block="active_block"
     local cache_key_daily="daily_usage_${today}"
     local cache_key_monthly="monthly_usage_${current_month}"
@@ -180,7 +180,7 @@ typeset -g CCUSAGE_LAST_UPDATE_CHECK=0
 # Precmd hook for automatic updates
 function ccusage_precmd() {
     # Throttle precmd execution - only check every 5 seconds
-    local current_time=$EPOCHSECONDS
+    local current_time=${EPOCHSECONDS:-$(date +%s)}
     if (( current_time - CCUSAGE_LAST_UPDATE_CHECK < 5 )); then
         return
     fi

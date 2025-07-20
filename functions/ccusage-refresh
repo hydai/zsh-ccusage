@@ -5,8 +5,8 @@
 
 # Clear all cost mode caches specifically
 function ccusage_clear_all_cost_caches() {
-    local today=$(date +%Y%m%d)
-    local current_month=$(date +%Y%m)
+    local today=$(ccusage_get_today)
+    local current_month=$(ccusage_get_current_month)
     
     # Clear all cost mode caches
     ccusage_cache_clear "cost_active"

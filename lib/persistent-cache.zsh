@@ -28,7 +28,7 @@ function ccusage_persistent_set() {
         echo "$value" > "$CCUSAGE_CACHE_DIR/${safe_key}.json"
         
         # Write timestamp to separate file
-        echo "$EPOCHSECONDS" > "$CCUSAGE_CACHE_DIR/${safe_key}.time"
+        echo "${EPOCHSECONDS:-$(date +%s)}" > "$CCUSAGE_CACHE_DIR/${safe_key}.time"
     } &!
 }
 
@@ -51,7 +51,7 @@ function ccusage_persistent_get() {
     # Read timestamp with minimal overhead
     local cache_time
     if read -r cache_time < "$time_file" 2>/dev/null; then
-        local current_time=$EPOCHSECONDS
+        local current_time=${EPOCHSECONDS:-$(date +%s)}
         local age=$((current_time - cache_time))
         
         # Check if cache is still fresh

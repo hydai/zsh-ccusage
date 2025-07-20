@@ -24,7 +24,7 @@ function ccusage_cache_set() {
     
     # Store in memory cache
     CCUSAGE_CACHE[$key]=$value
-    CCUSAGE_CACHE_TIME[$key]=$EPOCHSECONDS
+    CCUSAGE_CACHE_TIME[$key]=${EPOCHSECONDS:-$(date +%s)}
     
     # Also store in persistent cache
     ccusage_persistent_set "$key" "$value"
@@ -40,7 +40,7 @@ function ccusage_cache_get() {
     # First check memory cache
     if [[ -n "${CCUSAGE_CACHE[$key]}" ]]; then
         local cache_time=${CCUSAGE_CACHE_TIME[$key]:-0}
-        local current_time=$EPOCHSECONDS
+        local current_time=${EPOCHSECONDS:-$(date +%s)}
         local age=$((current_time - cache_time))
         
         if (( age <= max_age )); then
@@ -58,7 +58,7 @@ function ccusage_cache_get() {
     if [[ -n "$persistent_value" ]]; then
         # Load into memory cache for faster access
         CCUSAGE_CACHE[$key]=$persistent_value
-        CCUSAGE_CACHE_TIME[$key]=$EPOCHSECONDS
+        CCUSAGE_CACHE_TIME[$key]=${EPOCHSECONDS:-$(date +%s)}
         echo "$persistent_value"
         return 0
     fi
