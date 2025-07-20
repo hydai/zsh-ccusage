@@ -258,7 +258,7 @@
   - Update disk cache alongside memory cache
   - _Requirements: R13
 
-- [ ] 38. Update refresh command for all cost modes
+- [x] 38. Update refresh command for all cost modes
   - Modify ccusage-refresh to clear all cost caches
   - Trigger parallel refresh of all modes
   - Show progress indicator during refresh
