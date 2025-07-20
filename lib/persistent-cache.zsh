@@ -22,11 +22,14 @@ function ccusage_persistent_set() {
     # Sanitize key for filesystem (replace / with _)
     local safe_key="${key//\//_}"
     
-    # Write value to file
-    echo "$value" > "$CCUSAGE_CACHE_DIR/${safe_key}.json"
-    
-    # Write timestamp to separate file
-    echo "$EPOCHSECONDS" > "$CCUSAGE_CACHE_DIR/${safe_key}.time"
+    # Write to persistent cache asynchronously to avoid blocking
+    {
+        # Write value to file
+        echo "$value" > "$CCUSAGE_CACHE_DIR/${safe_key}.json"
+        
+        # Write timestamp to separate file
+        echo "$EPOCHSECONDS" > "$CCUSAGE_CACHE_DIR/${safe_key}.time"
+    } &!
 }
 
 # Read data from persistent cache if still valid
@@ -42,23 +45,26 @@ function ccusage_persistent_get() {
     local value_file="$CCUSAGE_CACHE_DIR/${safe_key}.json"
     local time_file="$CCUSAGE_CACHE_DIR/${safe_key}.time"
     
-    # Check if files exist
-    if [[ ! -f "$value_file" || ! -f "$time_file" ]]; then
-        return 1
+    # Check if files exist - use test command for speed
+    [[ -f "$value_file" && -f "$time_file" ]] || return 1
+    
+    # Read timestamp with minimal overhead
+    local cache_time
+    if read -r cache_time < "$time_file" 2>/dev/null; then
+        local current_time=$EPOCHSECONDS
+        local age=$((current_time - cache_time))
+        
+        # Check if cache is still fresh
+        if (( age <= max_age )); then
+            # Use read for small files to avoid cat overhead
+            if [[ -s "$value_file" ]]; then
+                cat "$value_file" 2>/dev/null
+                return 0
+            fi
+        fi
     fi
     
-    # Read timestamp
-    local cache_time=$(<"$time_file")
-    local current_time=$EPOCHSECONDS
-    local age=$((current_time - cache_time))
-    
-    # Check if cache is still fresh
-    if (( age <= max_age )); then
-        cat "$value_file"
-        return 0
-    else
-        return 1
-    fi
+    return 1
 }
 
 # Get persistent cache regardless of age
@@ -72,12 +78,8 @@ function ccusage_persistent_get_stale() {
     
     local value_file="$CCUSAGE_CACHE_DIR/${safe_key}.json"
     
-    if [[ -f "$value_file" ]]; then
-        cat "$value_file"
-        return 0
-    fi
-    
-    return 1
+    # Fast existence check and read
+    [[ -f "$value_file" ]] && cat "$value_file" 2>/dev/null
 }
 
 # Clear persistent cache entry

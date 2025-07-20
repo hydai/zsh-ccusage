@@ -2,6 +2,43 @@
 
 # Data fetching functions for zsh-ccusage plugin
 
+# Helper function to run command with timeout
+# Input: timeout_seconds, command and args
+# Output: command output
+# Exit code: 0 on success, 124 on timeout, other on error
+function ccusage_run_with_timeout() {
+    local timeout_seconds=$1
+    shift
+    local cmd=("$@")
+    
+    # Check if timeout command is available
+    if command -v timeout &> /dev/null; then
+        timeout $timeout_seconds "${cmd[@]}" 2>&1
+        return $?
+    else
+        # Fallback for systems without timeout (e.g., macOS)
+        # Use perl if available (more reliable than shell-based timeout)
+        if command -v perl &> /dev/null; then
+            perl -e '
+                alarm($ARGV[0]);
+                $SIG{ALRM} = sub { die "timeout\n" };
+                $output = `$ARGV[1]`;
+                $exit_code = $? >> 8;
+                print $output;
+                exit($exit_code);
+            ' $timeout_seconds "${cmd[*]}" 2>&1
+            local exit_code=$?
+            # Convert perl timeout (255) to standard timeout code (124)
+            [[ $exit_code -eq 255 ]] && return 124
+            return $exit_code
+        else
+            # Last resort: run without timeout
+            "${cmd[@]}" 2>&1
+            return $?
+        fi
+    fi
+}
+
 # Fetches cost data from ccusage CLI for active blocks
 # Input: none
 # Output: JSON string or error message
@@ -18,7 +55,7 @@ function ccusage_fetch_active_block() {
     local exit_code
     
     # Run command with timeout to prevent hanging
-    output=$(timeout $timeout_seconds npx ccusage@latest blocks --active --json 2>&1)
+    output=$(ccusage_run_with_timeout $timeout_seconds npx ccusage blocks --active --json)
     exit_code=$?
     
     # Handle different exit scenarios
@@ -69,7 +106,7 @@ function ccusage_fetch_daily() {
     local exit_code
     
     # Run command with timeout to prevent hanging
-    output=$(timeout $timeout_seconds npx ccusage@latest daily -s "$date" --json 2>&1)
+    output=$(ccusage_run_with_timeout $timeout_seconds npx ccusage daily -s "$date" --json)
     exit_code=$?
     
     # Handle different exit scenarios
@@ -117,7 +154,7 @@ function ccusage_fetch_monthly() {
     local exit_code
     
     # Run command with timeout to prevent hanging
-    output=$(timeout $timeout_seconds npx ccusage@latest monthly --json 2>&1)
+    output=$(ccusage_run_with_timeout $timeout_seconds npx ccusage monthly --json)
     exit_code=$?
     
     # Handle different exit scenarios
@@ -166,7 +203,7 @@ function ccusage_fetch_daily_cost() {
     local exit_code
     
     # Run command with timeout to prevent hanging
-    output=$(timeout $timeout_seconds npx ccusage@latest -s "$date" --json 2>&1)
+    output=$(ccusage_run_with_timeout $timeout_seconds npx ccusage -s "$date" --json)
     exit_code=$?
     
     # Handle different exit scenarios
@@ -217,7 +254,7 @@ function ccusage_fetch_monthly_cost() {
     local exit_code
     
     # Run command with timeout to prevent hanging
-    output=$(timeout $timeout_seconds npx ccusage@latest monthly -s "$month_start" --json 2>&1)
+    output=$(ccusage_run_with_timeout $timeout_seconds npx ccusage monthly -s "$month_start" --json)
     exit_code=$?
     
     # Handle different exit scenarios

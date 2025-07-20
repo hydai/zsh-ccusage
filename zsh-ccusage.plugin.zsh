@@ -94,105 +94,120 @@ function ccusage_load_components() {
     fi
 }
 
+# Cache the last display result to avoid recalculation
+typeset -g CCUSAGE_LAST_DISPLAY_CACHE=""
+typeset -g CCUSAGE_LAST_DISPLAY_TIME=0
+
 # Display function - returns formatted cost information
 function ccusage_display() {
+    # Quick cache check - return last result if very recent (within 1 second)
+    local current_time=$EPOCHSECONDS
+    if [[ -n "$CCUSAGE_LAST_DISPLAY_CACHE" ]] && (( current_time - CCUSAGE_LAST_DISPLAY_TIME < 1 )); then
+        echo -n "$CCUSAGE_LAST_DISPLAY_CACHE"
+        return
+    fi
+    
     # Ensure components are loaded
     ccusage_load_components
     
-    local cost percentage
-    local cache_key_block="active_block"
+    # Pre-generate cache keys once
     local today=$(date '+%Y%m%d')
     local current_month=$(date '+%Y%m')
+    local cache_key_block="active_block"
     local cache_key_daily="daily_usage_${today}"
     local cache_key_monthly="monthly_usage_${current_month}"
+    
+    # Combined cache check for better performance
+    local block_json daily_json monthly_json
+    local has_data=false
     local is_stale=false
     
-    # Try to get cached active block data (never fetch synchronously)
-    local block_json=$(ccusage_cache_get "$cache_key_block")
-    local has_data=false
+    # Try memory cache first (fastest)
+    if [[ -n "${CCUSAGE_CACHE[$cache_key_block]}" ]]; then
+        block_json="${CCUSAGE_CACHE[$cache_key_block]}"
+        has_data=true
+    fi
     
-    if [[ -z "$block_json" ]]; then
-        # No cached data - try stale cache
+    if [[ -n "${CCUSAGE_CACHE[$cache_key_daily]}" ]]; then
+        daily_json="${CCUSAGE_CACHE[$cache_key_daily]}"
+        has_data=true
+    fi
+    
+    # If no memory cache, check persistent cache
+    if [[ "$has_data" == "false" ]]; then
+        # Try stale cache as fallback
         block_json=$(ccusage_cache_get_stale "$cache_key_block")
-        if [[ -n "$block_json" ]]; then
-            is_stale=true
-            has_data=true
-        fi
-    else
-        has_data=true
-    fi
-    
-    # Try to get cached daily usage data (never fetch synchronously)
-    local daily_json=$(ccusage_cache_get "$cache_key_daily")
-    if [[ -z "$daily_json" ]]; then
-        # No cached data - try stale cache
         daily_json=$(ccusage_cache_get_stale "$cache_key_daily")
-        if [[ -n "$daily_json" ]]; then
-            is_stale=true
+        
+        if [[ -n "$block_json" ]] || [[ -n "$daily_json" ]]; then
             has_data=true
+            is_stale=true
         fi
-    else
-        has_data=true
     fi
     
-    # Try to get cached monthly usage data if in monthly mode
-    local monthly_json=""
+    # Only check monthly if needed
     if [[ "${CCUSAGE_PERCENTAGE_MODE:-daily_avg}" == "monthly" ]]; then
-        monthly_json=$(ccusage_cache_get "$cache_key_monthly")
-        if [[ -z "$monthly_json" ]]; then
-            # No cached data - try stale cache
+        if [[ -n "${CCUSAGE_CACHE[$cache_key_monthly]}" ]]; then
+            monthly_json="${CCUSAGE_CACHE[$cache_key_monthly]}"
+        elif [[ "$is_stale" == "true" ]]; then
             monthly_json=$(ccusage_cache_get_stale "$cache_key_monthly")
-            if [[ -n "$monthly_json" ]]; then
-                is_stale=true
-            fi
         fi
     fi
     
     # If no data at all, return loading indicator
     if [[ "$has_data" == "false" ]]; then
-        echo -n "[Loading...]"
+        CCUSAGE_LAST_DISPLAY_CACHE="[Loading...]"
+        CCUSAGE_LAST_DISPLAY_TIME=$current_time
+        echo -n "$CCUSAGE_LAST_DISPLAY_CACHE"
         return
     fi
     
     # Get cost based on configured cost mode
     local cost_info=($(ccusage_get_cost_by_mode))
-    cost="${cost_info[1]}"
+    local cost="${cost_info[1]}"
     local cost_mode_suffix="${cost_info[2]}"
     local cost_is_stale="${cost_info[3]:-false}"
     
-    # Calculate percentage based on mode
-    local mode="${CCUSAGE_PERCENTAGE_MODE:-daily_avg}"
-    local daily_cost monthly_cost
+    # Calculate percentage
+    local daily_cost=0
+    local monthly_cost=0
     
-    # Parse daily cost from JSON
     if [[ -n "$daily_json" ]]; then
         daily_cost=$(ccusage_parse_daily_cost "$daily_json")
-    else
-        daily_cost="0"
     fi
     
-    # Parse monthly cost if needed
-    if [[ "$mode" == "monthly" && -n "$monthly_json" ]]; then
+    if [[ "${CCUSAGE_PERCENTAGE_MODE:-daily_avg}" == "monthly" && -n "$monthly_json" ]]; then
         monthly_cost=$(ccusage_parse_monthly_cost "$monthly_json")
     fi
     
-    # Calculate percentage using the new function
-    percentage=$(ccusage_calculate_percentage "$daily_cost" "$monthly_cost")
+    local percentage=$(ccusage_calculate_percentage "$daily_cost" "$monthly_cost")
     
-    # Format and display the data
-    # Check if either cost or percentage data is stale
+    # Determine overall stale status
     local display_is_stale="false"
     if [[ "$cost_is_stale" == "true" ]] || [[ "$is_stale" == "true" ]]; then
         display_is_stale="true"
     fi
-    ccusage_format_display "$cost" "$percentage" "$display_is_stale" "$cost_mode_suffix"
+    
+    # Format and cache the result
+    local display_result=$(ccusage_format_display "$cost" "$percentage" "$display_is_stale" "$cost_mode_suffix")
+    CCUSAGE_LAST_DISPLAY_CACHE="$display_result"
+    CCUSAGE_LAST_DISPLAY_TIME=$current_time
+    
+    echo -n "$display_result"
 }
 
-# Track last displayed value for change detection
-typeset -g CCUSAGE_LAST_DISPLAY=""
+# Track last update time to throttle precmd executions
+typeset -g CCUSAGE_LAST_UPDATE_CHECK=0
 
 # Precmd hook for automatic updates
 function ccusage_precmd() {
+    # Throttle precmd execution - only check every 5 seconds
+    local current_time=$EPOCHSECONDS
+    if (( current_time - CCUSAGE_LAST_UPDATE_CHECK < 5 )); then
+        return
+    fi
+    CCUSAGE_LAST_UPDATE_CHECK=$current_time
+    
     # Ensure components are loaded
     ccusage_load_components
     
