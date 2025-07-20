@@ -70,7 +70,7 @@
   - Test with various JSON inputs (empty, error, valid)
   - _Requirements: R4
 
-- [ ] 11. Update parser functions to use JSON utilities
+- [x] 11. Update parser functions to use JSON utilities
   - Replace validation logic in `ccusage_parse_block_cost()`
   - Replace validation logic in `ccusage_parse_daily_cost()`
   - Replace validation logic in `ccusage_parse_monthly_cost()`

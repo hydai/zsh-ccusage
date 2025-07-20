@@ -9,15 +9,10 @@
 function ccusage_parse_block_cost() {
     local json_input=$1
     
-    # Check if input is empty or null
-    if [[ -z "$json_input" ]]; then
-        echo "0.00"
-        return 0
-    fi
-    
-    # Check if it's an error response
-    if [[ "$json_input" == *'"error"'* ]]; then
-        echo "0.00"
+    # Use JSON validation utility
+    local validation_result=$(ccusage_validate_json_input "$json_input")
+    if [[ $? -eq 1 ]]; then
+        echo "$validation_result"
         return 0
     fi
     
@@ -51,15 +46,10 @@ function ccusage_parse_daily_percentage() {
     local json_input=$1
     local limit=${2:-${CCUSAGE_PLAN_LIMIT:-${CCUSAGE_DAILY_LIMIT:-200}}}  # Use PLAN_LIMIT, fallback to DAILY_LIMIT, then 200
     
-    # Check if input is empty or null
-    if [[ -z "$json_input" ]]; then
-        echo "0"
-        return 0
-    fi
-    
-    # Check if it's an error response
-    if [[ "$json_input" == *'"error"'* ]]; then
-        echo "0"
+    # Use JSON validation utility with custom default value for percentage
+    local validation_result=$(ccusage_validate_json_input "$json_input" "0")
+    if [[ $? -eq 1 ]]; then
+        echo "$validation_result"
         return 0
     fi
     
@@ -213,15 +203,10 @@ function ccusage_calculate_percentage() {
 function ccusage_parse_monthly_cost() {
     local json_input=$1
     
-    # Check if input is empty or null
-    if [[ -z "$json_input" ]]; then
-        echo "0.00"
-        return 0
-    fi
-    
-    # Check if it's an error response
-    if [[ "$json_input" == *'"error"'* ]]; then
-        echo "0.00"
+    # Use JSON validation utility
+    local validation_result=$(ccusage_validate_json_input "$json_input")
+    if [[ $? -eq 1 ]]; then
+        echo "$validation_result"
         return 0
     fi
     
@@ -253,15 +238,10 @@ function ccusage_parse_monthly_cost() {
 function ccusage_parse_daily_cost() {
     local json_input=$1
     
-    # Check if input is empty or null
-    if [[ -z "$json_input" ]]; then
-        echo "0.00"
-        return 0
-    fi
-    
-    # Check if it's an error response
-    if [[ "$json_input" == *'"error"'* ]]; then
-        echo "0.00"
+    # Use JSON validation utility
+    local validation_result=$(ccusage_validate_json_input "$json_input")
+    if [[ $? -eq 1 ]]; then
+        echo "$validation_result"
         return 0
     fi
     
