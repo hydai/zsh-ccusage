@@ -102,34 +102,6 @@ function ccusage_is_valid_json() {
     fi
 }
 
-# Get number of days in the current month
-# Output: Number of days (28-31)
-function ccusage_get_days_in_month() {
-    local year=$(date +%Y)
-    local month=$(date +%m)
-    
-    # Use date command to get last day of current month
-    local days=$(date -d "${year}-${month}-01 +1 month -1 day" +%d 2>/dev/null)
-    
-    # Fallback for systems without GNU date (e.g., macOS)
-    if [[ -z "$days" ]]; then
-        case $month in
-            01|03|05|07|08|10|12) days=31 ;;
-            04|06|09|11) days=30 ;;
-            02)
-                # Check for leap year
-                if (( year % 4 == 0 && (year % 100 != 0 || year % 400 == 0) )); then
-                    days=29
-                else
-                    days=28
-                fi
-                ;;
-            *) days=30 ;;  # Fallback
-        esac
-    fi
-    
-    echo "$days"
-}
 
 # Calculate percentage based on configured mode
 # Input: daily_cost, monthly_cost (optional for monthly mode)

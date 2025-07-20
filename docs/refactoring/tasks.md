@@ -91,7 +91,7 @@
   - Verify stale data handling still works
   - _Requirements: R3
 
-- [ ] 14. Clean up obsolete code and test
+- [x] 14. Clean up obsolete code and test
   - Remove duplicate error handling code from all fetch functions
   - Remove duplicate date generation code
   - Run full test suite (`./validate.sh`, `test_percentage_modes.zsh`)

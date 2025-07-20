@@ -216,8 +216,8 @@ function ccusage_async_check_needed() {
     fi
     
     # Generate date-based cache keys
-    local today=$(date '+%Y%m%d')
-    local current_month=$(date '+%Y%m')
+    local today=$(ccusage_get_today)
+    local current_month=$(ccusage_get_current_month)
     
     local block_valid=$(ccusage_cache_valid "active_block" && echo 1 || echo 0)
     local daily_valid=$(ccusage_cache_valid "daily_usage_${today}" && echo 1 || echo 0)
@@ -259,8 +259,8 @@ function ccusage_async_process_results() {
     local cost_monthly_file="$CCUSAGE_ASYNC_TMPDIR/cost_monthly.json"
     
     # Generate date-based cache keys
-    local today=$(date '+%Y%m%d')
-    local current_month=$(date '+%Y%m')
+    local today=$(ccusage_get_today)
+    local current_month=$(ccusage_get_current_month)
     
     # Update cache with results
     if [[ -f "$block_file" ]]; then
