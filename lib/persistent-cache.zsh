@@ -19,11 +19,14 @@ function ccusage_persistent_set() {
     
     ccusage_ensure_cache_dir
     
+    # Sanitize key for filesystem (replace / with _)
+    local safe_key="${key//\//_}"
+    
     # Write value to file
-    echo "$value" > "$CCUSAGE_CACHE_DIR/${key}.json"
+    echo "$value" > "$CCUSAGE_CACHE_DIR/${safe_key}.json"
     
     # Write timestamp to separate file
-    echo "$EPOCHSECONDS" > "$CCUSAGE_CACHE_DIR/${key}.time"
+    echo "$EPOCHSECONDS" > "$CCUSAGE_CACHE_DIR/${safe_key}.time"
 }
 
 # Read data from persistent cache if still valid
@@ -33,8 +36,11 @@ function ccusage_persistent_get() {
     local key=$1
     local max_age=${2:-$CCUSAGE_CACHE_DURATION}
     
-    local value_file="$CCUSAGE_CACHE_DIR/${key}.json"
-    local time_file="$CCUSAGE_CACHE_DIR/${key}.time"
+    # Sanitize key for filesystem (replace / with _)
+    local safe_key="${key//\//_}"
+    
+    local value_file="$CCUSAGE_CACHE_DIR/${safe_key}.json"
+    local time_file="$CCUSAGE_CACHE_DIR/${safe_key}.time"
     
     # Check if files exist
     if [[ ! -f "$value_file" || ! -f "$time_file" ]]; then
@@ -60,7 +66,11 @@ function ccusage_persistent_get() {
 # Output: Cached value or empty string
 function ccusage_persistent_get_stale() {
     local key=$1
-    local value_file="$CCUSAGE_CACHE_DIR/${key}.json"
+    
+    # Sanitize key for filesystem (replace / with _)
+    local safe_key="${key//\//_}"
+    
+    local value_file="$CCUSAGE_CACHE_DIR/${safe_key}.json"
     
     if [[ -f "$value_file" ]]; then
         cat "$value_file"
@@ -75,7 +85,10 @@ function ccusage_persistent_get_stale() {
 function ccusage_persistent_clear() {
     local key=$1
     
-    rm -f "$CCUSAGE_CACHE_DIR/${key}.json" "$CCUSAGE_CACHE_DIR/${key}.time" 2>/dev/null
+    # Sanitize key for filesystem (replace / with _)
+    local safe_key="${key//\//_}"
+    
+    rm -f "$CCUSAGE_CACHE_DIR/${safe_key}.json" "$CCUSAGE_CACHE_DIR/${safe_key}.time" 2>/dev/null
 }
 
 # Clear all persistent cache
