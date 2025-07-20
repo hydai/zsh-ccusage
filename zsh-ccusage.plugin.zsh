@@ -165,19 +165,10 @@ function ccusage_display() {
     local daily_cost monthly_cost
     
     # Parse daily cost from JSON
-    daily_cost=$(ccusage_parse_daily_percentage "$daily_json" "1")  # Get raw cost by using limit=1
-    if [[ -z "$daily_cost" ]] || [[ "$daily_cost" == "0" ]]; then
-        # Fallback: extract total cost directly
-        if [[ "$daily_json" =~ '"totals"[^}]*"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
-            daily_cost="${match[1]}"
-        elif [[ "$daily_json" =~ '"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
-            daily_cost="${match[1]}"
-        else
-            daily_cost="0"
-        fi
+    if [[ -n "$daily_json" ]]; then
+        daily_cost=$(ccusage_parse_daily_cost "$daily_json")
     else
-        # Convert percentage back to cost (daily_cost was percentage with limit=1)
-        daily_cost=$((daily_cost / 100.0))
+        daily_cost="0"
     fi
     
     # Parse monthly cost if needed

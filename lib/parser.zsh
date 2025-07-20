@@ -317,24 +317,14 @@ function ccusage_get_cost_by_mode() {
             # Try cache first
             json_data=$(ccusage_cache_get "$cache_key")
             
-            # If no cached data, fetch it
+            # If no cached data, try stale cache
             if [[ -z "$json_data" ]]; then
-                json_data=$(ccusage_fetch_active_block)
-                # Check if fetch resulted in an error
-                if [[ -n "$json_data" ]] && [[ "$json_data" == *'"error"'* ]]; then
+                json_data=$(ccusage_cache_get_stale "$cache_key")
+                if [[ -n "$json_data" ]]; then
+                    is_stale="true"
+                else
+                    # No cache available at all
                     has_error="true"
-                    # Try to get stale cache data
-                    local stale_data=$(ccusage_cache_get_stale "$cache_key")
-                    if [[ -n "$stale_data" ]] && [[ "$stale_data" != *'"error"'* ]]; then
-                        json_data="$stale_data"
-                        is_stale="true"
-                    else
-                        # No cache available at all
-                        json_data=""
-                    fi
-                elif [[ -n "$json_data" ]]; then
-                    # Successful fetch, cache it
-                    ccusage_cache_set "$cache_key" "$json_data"
                 fi
             fi
             
@@ -356,24 +346,14 @@ function ccusage_get_cost_by_mode() {
             # Try cache first
             json_data=$(ccusage_cache_get "$cache_key")
             
-            # If no cached data, fetch it
+            # If no cached data, try stale cache
             if [[ -z "$json_data" ]]; then
-                json_data=$(ccusage_fetch_daily_cost)
-                # Check if fetch resulted in an error
-                if [[ -n "$json_data" ]] && [[ "$json_data" == *'"error"'* ]]; then
+                json_data=$(ccusage_cache_get_stale "$cache_key")
+                if [[ -n "$json_data" ]]; then
+                    is_stale="true"
+                else
+                    # No cache available at all
                     has_error="true"
-                    # Try to get stale cache data
-                    local stale_data=$(ccusage_cache_get_stale "$cache_key")
-                    if [[ -n "$stale_data" ]] && [[ "$stale_data" != *'"error"'* ]]; then
-                        json_data="$stale_data"
-                        is_stale="true"
-                    else
-                        # No cache available at all
-                        json_data=""
-                    fi
-                elif [[ -n "$json_data" ]]; then
-                    # Successful fetch, cache it
-                    ccusage_cache_set "$cache_key" "$json_data"
                 fi
             fi
             
@@ -395,24 +375,14 @@ function ccusage_get_cost_by_mode() {
             # Try cache first
             json_data=$(ccusage_cache_get "$cache_key")
             
-            # If no cached data, fetch it
+            # If no cached data, try stale cache
             if [[ -z "$json_data" ]]; then
-                json_data=$(ccusage_fetch_monthly_cost)
-                # Check if fetch resulted in an error
-                if [[ -n "$json_data" ]] && [[ "$json_data" == *'"error"'* ]]; then
+                json_data=$(ccusage_cache_get_stale "$cache_key")
+                if [[ -n "$json_data" ]]; then
+                    is_stale="true"
+                else
+                    # No cache available at all
                     has_error="true"
-                    # Try to get stale cache data
-                    local stale_data=$(ccusage_cache_get_stale "$cache_key")
-                    if [[ -n "$stale_data" ]] && [[ "$stale_data" != *'"error"'* ]]; then
-                        json_data="$stale_data"
-                        is_stale="true"
-                    else
-                        # No cache available at all
-                        json_data=""
-                    fi
-                elif [[ -n "$json_data" ]]; then
-                    # Successful fetch, cache it
-                    ccusage_cache_set "$cache_key" "$json_data"
                 fi
             fi
             

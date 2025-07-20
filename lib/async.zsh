@@ -33,6 +33,7 @@ function ccusage_async_update() {
     export CCUSAGE_PLUGIN_DIR
     export CCUSAGE_PERCENTAGE_MODE
     export CCUSAGE_COST_MODE
+    export CCUSAGE_FETCH_ALL_MODES
     
     # Disable job control notifications for this subshell
     setopt local_options no_notify no_monitor
@@ -80,48 +81,101 @@ function ccusage_async_update() {
         local fetch_cost_daily=false
         local fetch_cost_monthly=false
         
-        if ! ccusage_cache_valid "cost_active"; then
-            fetch_cost_active=true
+        # Performance optimization: Only fetch current cost mode on regular updates
+        # Unless all_modes is set (e.g., from refresh command)
+        local all_modes="${CCUSAGE_FETCH_ALL_MODES:-false}"
+        
+        if [[ "$all_modes" == "true" ]]; then
+            # Batch mode: check all caches
+            if ! ccusage_cache_valid "cost_active"; then
+                fetch_cost_active=true
+            fi
+            
+            if ! ccusage_cache_valid "cost_daily_${today}"; then
+                fetch_cost_daily=true
+            fi
+            
+            if ! ccusage_cache_valid "cost_monthly_${current_month}"; then
+                fetch_cost_monthly=true
+            fi
+        else
+            # Regular mode: only fetch current cost mode
+            case "${CCUSAGE_COST_MODE:-active}" in
+                active)
+                    if ! ccusage_cache_valid "cost_active"; then
+                        fetch_cost_active=true
+                    fi
+                    ;;
+                daily)
+                    if ! ccusage_cache_valid "cost_daily_${today}"; then
+                        fetch_cost_daily=true
+                    fi
+                    ;;
+                monthly)
+                    if ! ccusage_cache_valid "cost_monthly_${current_month}"; then
+                        fetch_cost_monthly=true
+                    fi
+                    ;;
+            esac
         fi
         
-        if ! ccusage_cache_valid "cost_daily_${today}"; then
-            fetch_cost_daily=true
-        fi
+        # Count how many cost mode fetches are needed
+        local fetch_count=0
+        [[ "$fetch_cost_active" == "true" ]] && (( fetch_count++ ))
+        [[ "$fetch_cost_daily" == "true" ]] && (( fetch_count++ ))
+        [[ "$fetch_cost_monthly" == "true" ]] && (( fetch_count++ ))
         
-        if ! ccusage_cache_valid "cost_monthly_${current_month}"; then
-            fetch_cost_monthly=true
-        fi
-        
-        # Fetch cost mode data in parallel using subshells
-        if [[ "$fetch_cost_active" == "true" ]]; then
-            (
+        # Batch API calls when multiple modes need updating
+        if (( fetch_count > 1 )); then
+            # Multiple modes need updating - fetch in parallel for efficiency
+            if [[ "$fetch_cost_active" == "true" ]]; then
+                (
+                    local cost_active_json=$(ccusage_fetch_active_block 2>/dev/null)
+                    if [[ $? -eq 0 && -n "$cost_active_json" ]]; then
+                        echo "$cost_active_json" > "$cost_active_file" 2>/dev/null
+                    fi
+                ) &
+            fi
+            
+            if [[ "$fetch_cost_daily" == "true" ]]; then
+                (
+                    local cost_daily_json=$(ccusage_fetch_daily_cost 2>/dev/null)
+                    if [[ $? -eq 0 && -n "$cost_daily_json" ]]; then
+                        echo "$cost_daily_json" > "$cost_daily_file" 2>/dev/null
+                    fi
+                ) &
+            fi
+            
+            if [[ "$fetch_cost_monthly" == "true" ]]; then
+                (
+                    local cost_monthly_json=$(ccusage_fetch_monthly_cost 2>/dev/null)
+                    if [[ $? -eq 0 && -n "$cost_monthly_json" ]]; then
+                        echo "$cost_monthly_json" > "$cost_monthly_file" 2>/dev/null
+                    fi
+                ) &
+            fi
+            
+            # Wait for all parallel fetches to complete
+            wait
+        else
+            # Single mode needs updating - fetch directly without subshell overhead
+            if [[ "$fetch_cost_active" == "true" ]]; then
                 local cost_active_json=$(ccusage_fetch_active_block 2>/dev/null)
                 if [[ $? -eq 0 && -n "$cost_active_json" ]]; then
                     echo "$cost_active_json" > "$cost_active_file" 2>/dev/null
                 fi
-            ) &
-        fi
-        
-        if [[ "$fetch_cost_daily" == "true" ]]; then
-            (
+            elif [[ "$fetch_cost_daily" == "true" ]]; then
                 local cost_daily_json=$(ccusage_fetch_daily_cost 2>/dev/null)
                 if [[ $? -eq 0 && -n "$cost_daily_json" ]]; then
                     echo "$cost_daily_json" > "$cost_daily_file" 2>/dev/null
                 fi
-            ) &
-        fi
-        
-        if [[ "$fetch_cost_monthly" == "true" ]]; then
-            (
+            elif [[ "$fetch_cost_monthly" == "true" ]]; then
                 local cost_monthly_json=$(ccusage_fetch_monthly_cost 2>/dev/null)
                 if [[ $? -eq 0 && -n "$cost_monthly_json" ]]; then
                     echo "$cost_monthly_json" > "$cost_monthly_file" 2>/dev/null
                 fi
-            ) &
+            fi
         fi
-        
-        # Wait for all parallel fetches to complete
-        wait
         
         # Write results to files
         if [[ $block_success -eq 0 && -n "$block_json" ]]; then

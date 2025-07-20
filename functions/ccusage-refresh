@@ -42,7 +42,7 @@ function ccusage-refresh() {
     
     # Trigger async update immediately
     # This will fetch all modes in parallel
-    ccusage_async_update
+    CCUSAGE_FETCH_ALL_MODES=true ccusage_async_update
     
     # For immediate feedback, also do a sync fetch for display
     local result=$(ccusage_display)
