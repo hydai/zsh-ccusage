@@ -2,50 +2,13 @@
 
 # Data fetching functions for zsh-ccusage plugin
 
-# Helper function to run command with timeout
-# Input: timeout_seconds, command and args
-# Output: command output
-# Exit code: 0 on success, 124 on timeout, other on error
-function ccusage_run_with_timeout() {
-    local timeout_seconds=$1
-    shift
-    local cmd=("$@")
-    
-    # Check if timeout command is available
-    if command -v timeout &> /dev/null; then
-        timeout $timeout_seconds "${cmd[@]}" 2>&1
-        return $?
-    else
-        # Fallback for systems without timeout (e.g., macOS)
-        # Use perl if available (more reliable than shell-based timeout)
-        if command -v perl &> /dev/null; then
-            perl -e '
-                alarm($ARGV[0]);
-                $SIG{ALRM} = sub { die "timeout\n" };
-                $output = `$ARGV[1]`;
-                $exit_code = $? >> 8;
-                print $output;
-                exit($exit_code);
-            ' $timeout_seconds "${cmd[*]}" 2>&1
-            local exit_code=$?
-            # Convert perl timeout (255) to standard timeout code (124)
-            [[ $exit_code -eq 255 ]] && return 124
-            return $exit_code
-        else
-            # Last resort: run without timeout
-            "${cmd[@]}" 2>&1
-            return $?
-        fi
-    fi
-}
 
 # Fetches cost data from ccusage CLI for active blocks
 # Input: none
 # Output: JSON string or error message
 function ccusage_fetch_active_block() {
-    # Check if npx is available
-    if ! command -v npx &> /dev/null; then
-        echo '{"error": "npx not found"}'
+    # Check if npx is available using centralized function
+    if ! ccusage_check_npx; then
         return 1
     fi
     
@@ -58,34 +21,9 @@ function ccusage_fetch_active_block() {
     output=$(ccusage_run_with_timeout $timeout_seconds npx ccusage blocks --active --json)
     exit_code=$?
     
-    # Handle different exit scenarios
-    case $exit_code in
-        0)
-            # Success - return the JSON output
-            echo "$output"
-            return 0
-            ;;
-        124)
-            # Timeout occurred
-            echo '{"error": "Command timed out", "error_type": "timeout"}'
-            return 1
-            ;;
-        *)
-            # Other errors (command not found, network issues, etc.)
-            # Check if output contains specific error patterns
-            if [[ "$output" =~ "command not found" ]] || [[ "$output" =~ "not found ccusage" ]]; then
-                echo '{"error": "ccusage not installed", "error_type": "not_installed"}'
-            elif [[ "$output" =~ "ENOTFOUND" ]] || [[ "$output" =~ "ETIMEDOUT" ]] || [[ "$output" =~ "ECONNREFUSED" ]]; then
-                echo '{"error": "Network error", "error_type": "network"}'
-            elif [[ -n "$output" ]]; then
-                # Try to create valid JSON with error message
-                echo "{\"error\": \"Command failed: ${output//\"/\\\"}\", \"error_type\": \"unknown\"}"
-            else
-                echo '{"error": "Command failed with no output", "error_type": "unknown"}'
-            fi
-            return 1
-            ;;
-    esac
+    # Use centralized error handler
+    ccusage_handle_fetch_error $exit_code "$output"
+    return $?
 }
 
 # Fetches daily usage data from ccusage CLI
