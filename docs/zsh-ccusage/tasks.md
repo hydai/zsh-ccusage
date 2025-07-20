@@ -237,14 +237,14 @@
   - Show available modes when called without arguments
   - _Requirements: R12
 
-- [ ] 35. Add cost mode error handling
+- [x] 35. Add cost mode error handling
   - Show cached value with asterisk on API failure
   - Display "$-.--MODE" when no cache available
   - Continue showing other modes if one fails
   - Log errors without disrupting prompt
   - _Requirements: R14
 
-- [ ] 36. Test independent cost and percentage combinations
+- [x] 36. Test independent cost and percentage combinations
   - Verify daily cost + monthly percentage shows "[$20.45D | 900%M]"
   - Verify monthly cost + daily average shows "[$1800.00M | 310%D]"
   - Test all 9 possible combinations (3 cost × 3 percentage)

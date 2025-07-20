@@ -287,8 +287,10 @@ function ccusage_parse_daily_cost() {
 
 # Get cost based on configured cost mode
 # Input: none (uses CCUSAGE_COST_MODE environment variable)
-# Output: Array with two elements: cost_value mode_indicator
-# Example: ("45.23" "A") for active mode
+# Output: Array with three elements: cost_value mode_indicator is_stale
+# Example: ("45.23" "A" "false") for active mode with fresh data
+#          ("20.45" "D" "true") for daily mode with stale data
+#          ("-.--" "M" "false") for monthly mode with no data
 function ccusage_get_cost_by_mode() {
     # Get configuration
     local mode="${CCUSAGE_COST_MODE:-active}"
@@ -303,6 +305,8 @@ function ccusage_get_cost_by_mode() {
     local mode_indicator=""
     local json_data=""
     local cache_key=""
+    local is_stale="false"
+    local has_error="false"
     
     # Route to appropriate fetcher based on mode
     case "$mode" in
@@ -316,15 +320,30 @@ function ccusage_get_cost_by_mode() {
             # If no cached data, fetch it
             if [[ -z "$json_data" ]]; then
                 json_data=$(ccusage_fetch_active_block)
-                # Cache the result if successful
-                if [[ -n "$json_data" ]] && [[ "$json_data" != *'"error"'* ]]; then
+                # Check if fetch resulted in an error
+                if [[ -n "$json_data" ]] && [[ "$json_data" == *'"error"'* ]]; then
+                    has_error="true"
+                    # Try to get stale cache data
+                    local stale_data=$(ccusage_cache_get_stale "$cache_key")
+                    if [[ -n "$stale_data" ]] && [[ "$stale_data" != *'"error"'* ]]; then
+                        json_data="$stale_data"
+                        is_stale="true"
+                    else
+                        # No cache available at all
+                        json_data=""
+                    fi
+                elif [[ -n "$json_data" ]]; then
+                    # Successful fetch, cache it
                     ccusage_cache_set "$cache_key" "$json_data"
                 fi
             fi
             
             # Parse the cost
-            if [[ -n "$json_data" ]]; then
+            if [[ -n "$json_data" ]] && [[ "$json_data" != *'"error"'* ]]; then
                 cost=$(ccusage_parse_block_cost "$json_data")
+            elif [[ "$has_error" == "true" ]] && [[ -z "$json_data" ]]; then
+                # No cache available, show placeholder
+                cost="-.--"
             fi
             ;;
             
@@ -340,15 +359,30 @@ function ccusage_get_cost_by_mode() {
             # If no cached data, fetch it
             if [[ -z "$json_data" ]]; then
                 json_data=$(ccusage_fetch_daily_cost)
-                # Cache the result if successful
-                if [[ -n "$json_data" ]] && [[ "$json_data" != *'"error"'* ]]; then
+                # Check if fetch resulted in an error
+                if [[ -n "$json_data" ]] && [[ "$json_data" == *'"error"'* ]]; then
+                    has_error="true"
+                    # Try to get stale cache data
+                    local stale_data=$(ccusage_cache_get_stale "$cache_key")
+                    if [[ -n "$stale_data" ]] && [[ "$stale_data" != *'"error"'* ]]; then
+                        json_data="$stale_data"
+                        is_stale="true"
+                    else
+                        # No cache available at all
+                        json_data=""
+                    fi
+                elif [[ -n "$json_data" ]]; then
+                    # Successful fetch, cache it
                     ccusage_cache_set "$cache_key" "$json_data"
                 fi
             fi
             
             # Parse the cost
-            if [[ -n "$json_data" ]]; then
+            if [[ -n "$json_data" ]] && [[ "$json_data" != *'"error"'* ]]; then
                 cost=$(ccusage_parse_daily_cost "$json_data")
+            elif [[ "$has_error" == "true" ]] && [[ -z "$json_data" ]]; then
+                # No cache available, show placeholder
+                cost="-.--"
             fi
             ;;
             
@@ -364,19 +398,34 @@ function ccusage_get_cost_by_mode() {
             # If no cached data, fetch it
             if [[ -z "$json_data" ]]; then
                 json_data=$(ccusage_fetch_monthly_cost)
-                # Cache the result if successful
-                if [[ -n "$json_data" ]] && [[ "$json_data" != *'"error"'* ]]; then
+                # Check if fetch resulted in an error
+                if [[ -n "$json_data" ]] && [[ "$json_data" == *'"error"'* ]]; then
+                    has_error="true"
+                    # Try to get stale cache data
+                    local stale_data=$(ccusage_cache_get_stale "$cache_key")
+                    if [[ -n "$stale_data" ]] && [[ "$stale_data" != *'"error"'* ]]; then
+                        json_data="$stale_data"
+                        is_stale="true"
+                    else
+                        # No cache available at all
+                        json_data=""
+                    fi
+                elif [[ -n "$json_data" ]]; then
+                    # Successful fetch, cache it
                     ccusage_cache_set "$cache_key" "$json_data"
                 fi
             fi
             
             # Parse the cost
-            if [[ -n "$json_data" ]]; then
+            if [[ -n "$json_data" ]] && [[ "$json_data" != *'"error"'* ]]; then
                 cost=$(ccusage_parse_monthly_cost "$json_data")
+            elif [[ "$has_error" == "true" ]] && [[ -z "$json_data" ]]; then
+                # No cache available, show placeholder
+                cost="-.--"
             fi
             ;;
     esac
     
-    # Return array with cost and mode indicator
-    echo "$cost" "$mode_indicator"
+    # Return array with cost, mode indicator, and stale flag
+    echo "$cost" "$mode_indicator" "$is_stale"
 }

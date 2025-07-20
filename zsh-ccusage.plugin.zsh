@@ -158,6 +158,7 @@ function ccusage_display() {
     local cost_info=($(ccusage_get_cost_by_mode))
     cost="${cost_info[1]}"
     local cost_mode_suffix="${cost_info[2]}"
+    local cost_is_stale="${cost_info[3]:-false}"
     
     # Calculate percentage based on mode
     local mode="${CCUSAGE_PERCENTAGE_MODE:-daily_avg}"
@@ -188,7 +189,12 @@ function ccusage_display() {
     percentage=$(ccusage_calculate_percentage "$daily_cost" "$monthly_cost")
     
     # Format and display the data
-    ccusage_format_display "$cost" "$percentage" "$is_stale"
+    # Check if either cost or percentage data is stale
+    local display_is_stale="false"
+    if [[ "$cost_is_stale" == "true" ]] || [[ "$is_stale" == "true" ]]; then
+        display_is_stale="true"
+    fi
+    ccusage_format_display "$cost" "$percentage" "$display_is_stale" "$cost_mode_suffix"
 }
 
 # Track last displayed value for change detection

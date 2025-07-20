@@ -6,12 +6,13 @@
 source "${0:A:h}/../lib/colors.zsh"
 
 # Format cost and percentage for display
-# Input: cost (numeric), percentage (numeric), is_stale (boolean)
+# Input: cost (numeric), percentage (numeric), is_stale (boolean), cost_suffix (optional)
 # Output: Formatted string with colors
 function ccusage_format_display() {
     local cost=${1:-0.00}
     local percentage=${2:-0}
     local is_stale=${3:-false}
+    local cost_suffix_override=${4:-}
     
     # Get terminal width for compact mode detection
     # Try multiple methods to ensure we get the width
@@ -40,13 +41,19 @@ function ccusage_format_display() {
     esac
     
     # Get cost mode for suffix
-    local cost_mode="${CCUSAGE_COST_MODE:-active}"
-    case "$cost_mode" in
-        active) local cost_suffix="A" ;;
-        daily) local cost_suffix="D" ;;
-        monthly) local cost_suffix="M" ;;
-        *) local cost_suffix="A" ;;  # Fallback to active
-    esac
+    local cost_suffix
+    if [[ -n "$cost_suffix_override" ]]; then
+        cost_suffix="$cost_suffix_override"
+    else
+        # Fallback to determining from environment variable
+        local cost_mode="${CCUSAGE_COST_MODE:-active}"
+        case "$cost_mode" in
+            active) cost_suffix="A" ;;
+            daily) cost_suffix="D" ;;
+            monthly) cost_suffix="M" ;;
+            *) cost_suffix="A" ;;  # Fallback to active
+        esac
+    fi
     
     # Add stale indicator if data is from cache
     local stale_indicator=""
