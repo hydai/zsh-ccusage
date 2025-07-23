@@ -183,12 +183,20 @@ function ccusage_parse_monthly_cost() {
     fi
     
     # Extract total cost from monthly response
-    # Monthly response typically has structure: {"usage": [...], "totals": {"totalCost": X}}
+    # New format: {"monthly": [...], "totals": {"totalCost": X}}
     local total_cost=""
     
-    # First try to find in totals section
+    # First try to find in totals section (preferred)
     if [[ "$json_input" =~ '"totals"[^}]*"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
         total_cost="${match[1]}"
+    elif [[ "$json_input" =~ '"monthly"[[:space:]]*:[[:space:]]*\[' ]]; then
+        # If no totals, try to sum all months or get current month
+        # Get current month in YYYY-MM format
+        local current_month=$(date +%Y-%m)
+        # Look for current month's totalCost
+        if [[ "$json_input" =~ "\"month\"[[:space:]]*:[[:space:]]*\"$current_month\"[^}]*\"totalCost\"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)" ]]; then
+            total_cost="${match[1]}"
+        fi
     elif [[ "$json_input" =~ '"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
         # Fallback to any totalCost in the response
         total_cost="${match[1]}"
@@ -205,10 +213,11 @@ function ccusage_parse_monthly_cost() {
 }
 
 # Parse daily cost from JSON response
-# Input: JSON string from ccusage -s YYYYMMDD command
+# Input: JSON string from ccusage daily command
 # Output: Numeric cost value or 0.00
 function ccusage_parse_daily_cost() {
     local json_input=$1
+    local use_latest=${2:-false}  # If true, use latest daily entry
     
     # Use JSON validation utility
     local validation_result=$(ccusage_validate_json_input "$json_input")
@@ -217,13 +226,54 @@ function ccusage_parse_daily_cost() {
         return 0
     fi
     
+    # Handle empty array response (no data)
+    if [[ "$json_input" == "[]" ]]; then
+        echo "0.00"
+        return 0
+    fi
+    
     # Extract total cost from daily response
-    # Daily response structure: [{"model": "...", "totalCost": X, ...}]
+    # New format: {"daily": [...], "totals": {"totalCost": X}}
     local total_cost=""
     
-    # Try to find totalCost in the response
-    if [[ "$json_input" =~ '"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
-        total_cost="${match[1]}"
+    if [[ "$use_latest" == "true" ]] && [[ "$json_input" =~ '"daily"[[:space:]]*:[[:space:]]*\[' ]]; then
+        # For latest daily data, find the last totalCost in the daily array
+        # Use a reverse search approach - find all totalCost occurrences
+        # Since we want the latest (last) entry, we'll use a different strategy
+        
+        # First check if there's data in the daily array
+        if [[ "$json_input" =~ '"daily"[[:space:]]*:[[:space:]]*\[[[:space:]]*\]' ]]; then
+            # Empty daily array
+            echo "0.00"
+            return 0
+        fi
+        
+        # Find the position of the last date entry and extract totalCost after it
+        # Look for pattern: "date":"YYYY-MM-DD"..."totalCost":X
+        # Get all text after the last "date" occurrence
+        local last_date_pos=${json_input%"date"*}
+        local from_last_date=${json_input:${#last_date_pos}}
+        
+        # Now find the first totalCost after this position
+        if [[ "$from_last_date" =~ '"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+            total_cost="${match[1]}"
+        fi
+    else
+        # Original logic for single day or totals
+        # First try to find in totals section (preferred)
+        if [[ "$json_input" =~ '"totals"[^}]*"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+            total_cost="${match[1]}"
+        elif [[ "$json_input" =~ '"daily"[[:space:]]*:[[:space:]]*\[' ]]; then
+            # If no totals section, extract first day's totalCost from daily array
+            if [[ "$json_input" =~ '"daily"[[:space:]]*:[[:space:]]*\[[^]]*"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+                total_cost="${match[1]}"
+            fi
+        elif [[ "$json_input" =~ '^[[:space:]]*\[' ]]; then
+            # Direct array format - extract first item's totalCost
+            if [[ "$json_input" =~ '\[[^]]*"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+                total_cost="${match[1]}"
+            fi
+        fi
     fi
     
     # If no cost found, return 0.00

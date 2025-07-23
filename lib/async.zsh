@@ -61,9 +61,19 @@ function ccusage_async_update() {
         local block_json=$(ccusage_fetch_active_block 2>/dev/null)
         local block_success=$?
         
-        # Fetch daily usage data  
-        local daily_json=$(ccusage_fetch_daily 2>/dev/null)
+        # Fetch daily usage data
+        local today=$(ccusage_get_today)
+        local daily_json=$(ccusage_fetch_daily "$today" 2>/dev/null)
         local daily_success=$?
+        
+        # If today's data is empty, try yesterday
+        if [[ "$daily_json" == "[]" ]] || [[ "$daily_json" == '{"daily":[],"totals":{"inputTokens":0,"outputTokens":0,"cacheCreationTokens":0,"cacheReadTokens":0,"totalCost":0,"totalTokens":0}}' ]]; then
+            local yesterday=$(date -v-1d +%Y%m%d 2>/dev/null || date -d "yesterday" +%Y%m%d 2>/dev/null)
+            if [[ -n "$yesterday" ]]; then
+                daily_json=$(ccusage_fetch_daily "$yesterday" 2>/dev/null)
+                daily_success=$?
+            fi
+        fi
         
         # Fetch monthly usage data only if percentage mode is monthly
         local monthly_json=""

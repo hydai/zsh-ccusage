@@ -90,7 +90,7 @@ function ccusage_fetch_daily_cost() {
     local exit_code
     
     # Run command with timeout to prevent hanging
-    output=$(ccusage_run_with_timeout $timeout_seconds npx ccusage -s "$date" --json)
+    output=$(ccusage_run_with_timeout $timeout_seconds npx ccusage daily -s "$date" --json)
     exit_code=$?
     
     # Use centralized error handler

@@ -91,9 +91,11 @@ function ccusage_display() {
     
     # Pre-generate cache keys once using cached date utilities
     local today=$(ccusage_get_today)
+    local yesterday=$(date -v-1d +%Y%m%d 2>/dev/null || date -d "yesterday" +%Y%m%d 2>/dev/null)
     local current_month=$(ccusage_get_current_month)
     local cache_key_block="active_block"
     local cache_key_daily="daily_usage_${today}"
+    local cache_key_daily_yesterday="daily_usage_${yesterday}"
     local cache_key_monthly="monthly_usage_${current_month}"
     
     # Combined cache check for better performance
@@ -107,8 +109,12 @@ function ccusage_display() {
         has_data=true
     fi
     
+    # Check for daily data - today first, then yesterday
     if [[ -n "${CCUSAGE_CACHE[$cache_key_daily]}" ]]; then
         daily_json="${CCUSAGE_CACHE[$cache_key_daily]}"
+        has_data=true
+    elif [[ -n "${CCUSAGE_CACHE[$cache_key_daily_yesterday]}" ]]; then
+        daily_json="${CCUSAGE_CACHE[$cache_key_daily_yesterday]}"
         has_data=true
     fi
     
@@ -117,6 +123,11 @@ function ccusage_display() {
         # Try stale cache as fallback
         block_json=$(ccusage_cache_get_stale "$cache_key_block")
         daily_json=$(ccusage_cache_get_stale "$cache_key_daily")
+        
+        # If no today's data, try yesterday
+        if [[ -z "$daily_json" ]]; then
+            daily_json=$(ccusage_cache_get_stale "$cache_key_daily_yesterday")
+        fi
         
         if [[ -n "$block_json" ]] || [[ -n "$daily_json" ]]; then
             has_data=true
