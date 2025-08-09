@@ -23,9 +23,12 @@ function ccusage_parse_block_cost() {
     fi
     
     # Extract cost using zsh pattern matching
-    # Look for pattern: "costUSD": <number>
+    # Look for pattern: "total_cost": <number> (ccstat format)
+    # or "costUSD": <number> (legacy ccusage format)
     local cost=""
-    if [[ "$json_input" =~ '"costUSD"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+    if [[ "$json_input" =~ '"total_cost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+        cost="${match[1]}"
+    elif [[ "$json_input" =~ '"costUSD"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
         cost="${match[1]}"
     fi
     
@@ -56,11 +59,18 @@ function ccusage_parse_daily_percentage() {
     # Extract total cost using zsh pattern matching
     local total_cost=""
     
-    # First try to find in totals section
-    if [[ "$json_input" =~ '"totals"[^}]*"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+    # First try to find in totals section (ccstat format with nested objects)
+    # Use .* instead of [^}]* to handle nested objects
+    if [[ "$json_input" =~ '"totals".*"total_cost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+        total_cost="${match[1]}"
+    elif [[ "$json_input" =~ '"totals".*"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+        # Legacy format
+        total_cost="${match[1]}"
+    elif [[ "$json_input" =~ '"total_cost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+        # Fallback to any total_cost in the response
         total_cost="${match[1]}"
     elif [[ "$json_input" =~ '"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
-        # Fallback to any totalCost in the response
+        # Legacy fallback
         total_cost="${match[1]}"
     fi
     
@@ -186,19 +196,30 @@ function ccusage_parse_monthly_cost() {
     # New format: {"monthly": [...], "totals": {"totalCost": X}}
     local total_cost=""
     
-    # First try to find in totals section (preferred)
-    if [[ "$json_input" =~ '"totals"[^}]*"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+    # First try to find in totals section (ccstat format with nested objects)
+    # Use .* instead of [^}]* to handle nested objects
+    if [[ "$json_input" =~ '"totals".*"total_cost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+        total_cost="${match[1]}"
+    elif [[ "$json_input" =~ '"totals".*"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+        # Legacy format
         total_cost="${match[1]}"
     elif [[ "$json_input" =~ '"monthly"[[:space:]]*:[[:space:]]*\[' ]]; then
         # If no totals, try to sum all months or get current month
         # Get current month in YYYY-MM format
         local current_month=$(date +%Y-%m)
-        # Look for current month's totalCost
-        if [[ "$json_input" =~ "\"month\"[[:space:]]*:[[:space:]]*\"$current_month\"[^}]*\"totalCost\"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)" ]]; then
+        # Look for current month's total_cost (ccstat format)
+        # Use .* instead of [^}]* to handle nested objects
+        if [[ "$json_input" =~ "\"month\"[[:space:]]*:[[:space:]]*\"$current_month\".*\"total_cost\"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)" ]]; then
+            total_cost="${match[1]}"
+        elif [[ "$json_input" =~ "\"month\"[[:space:]]*:[[:space:]]*\"$current_month\".*\"totalCost\"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)" ]]; then
+            # Legacy format
             total_cost="${match[1]}"
         fi
+    elif [[ "$json_input" =~ '"total_cost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+        # Fallback to any total_cost in the response
+        total_cost="${match[1]}"
     elif [[ "$json_input" =~ '"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
-        # Fallback to any totalCost in the response
+        # Legacy fallback
         total_cost="${match[1]}"
     fi
     
@@ -254,23 +275,38 @@ function ccusage_parse_daily_cost() {
         local last_date_pos=${json_input%"date"*}
         local from_last_date=${json_input:${#last_date_pos}}
         
-        # Now find the first totalCost after this position
-        if [[ "$from_last_date" =~ '"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+        # Now find the first total_cost after this position (ccstat format)
+        if [[ "$from_last_date" =~ '"total_cost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+            total_cost="${match[1]}"
+        elif [[ "$from_last_date" =~ '"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+            # Legacy format
             total_cost="${match[1]}"
         fi
     else
         # Original logic for single day or totals
-        # First try to find in totals section (preferred)
-        if [[ "$json_input" =~ '"totals"[^}]*"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+        # First try to find in totals section (ccstat format with nested objects)
+        # Use .* instead of [^}]* to handle nested objects
+        if [[ "$json_input" =~ '"totals".*"total_cost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+            total_cost="${match[1]}"
+        elif [[ "$json_input" =~ '"totals".*"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+            # Legacy format
             total_cost="${match[1]}"
         elif [[ "$json_input" =~ '"daily"[[:space:]]*:[[:space:]]*\[' ]]; then
-            # If no totals section, extract first day's totalCost from daily array
-            if [[ "$json_input" =~ '"daily"[[:space:]]*:[[:space:]]*\[[^]]*"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+            # If no totals section, extract first day's total_cost from daily array
+            # Use .* to handle any content within the array
+            if [[ "$json_input" =~ '"daily"[[:space:]]*:[[:space:]]*\[.*"total_cost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+                total_cost="${match[1]}"
+            elif [[ "$json_input" =~ '"daily"[[:space:]]*:[[:space:]]*\[.*"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+                # Legacy format
                 total_cost="${match[1]}"
             fi
         elif [[ "$json_input" =~ '^[[:space:]]*\[' ]]; then
-            # Direct array format - extract first item's totalCost
-            if [[ "$json_input" =~ '\[[^]]*"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+            # Direct array format - extract first item's total_cost
+            # Use .* to handle any content within the array
+            if [[ "$json_input" =~ '\[.*"total_cost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+                total_cost="${match[1]}"
+            elif [[ "$json_input" =~ '\[.*"totalCost"[[:space:]]*:[[:space:]]*([0-9]+\.?[0-9]*)' ]]; then
+                # Legacy format
                 total_cost="${match[1]}"
             fi
         fi

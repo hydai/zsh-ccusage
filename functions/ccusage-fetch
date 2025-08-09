@@ -43,7 +43,9 @@ function ccusage_fetch_daily() {
     local exit_code
     
     # Run command with timeout to prevent hanging
-    output=$(ccusage_run_with_timeout $timeout_seconds ccstat --quiet daily -s "$date" --json)
+    # Convert YYYYMMDD to YYYY-MM-DD format for ccstat
+    local formatted_date="${date:0:4}-${date:4:2}-${date:6:2}"
+    output=$(ccusage_run_with_timeout $timeout_seconds ccstat --quiet daily --since "$formatted_date" --json)
     exit_code=$?
     
     # Use centralized error handler
@@ -66,7 +68,9 @@ function ccusage_fetch_monthly() {
     local exit_code
     
     # Run command with timeout to prevent hanging
-    output=$(ccusage_run_with_timeout $timeout_seconds ccstat --quiet monthly --json)
+    # Get current month in YYYY-MM format for ccstat
+    local current_month=$(date +%Y-%m)
+    output=$(ccusage_run_with_timeout $timeout_seconds ccstat --quiet monthly --since "$current_month" --json)
     exit_code=$?
     
     # Use centralized error handler
@@ -90,7 +94,9 @@ function ccusage_fetch_daily_cost() {
     local exit_code
     
     # Run command with timeout to prevent hanging
-    output=$(ccusage_run_with_timeout $timeout_seconds ccstat --quiet daily -s "$date" --json)
+    # Convert YYYYMMDD to YYYY-MM-DD format for ccstat
+    local formatted_date="${date:0:4}-${date:4:2}-${date:6:2}"
+    output=$(ccusage_run_with_timeout $timeout_seconds ccstat --quiet daily --since "$formatted_date" --json)
     exit_code=$?
     
     # Use centralized error handler
@@ -116,7 +122,9 @@ function ccusage_fetch_monthly_cost() {
     local exit_code
     
     # Run command with timeout to prevent hanging
-    output=$(ccusage_run_with_timeout $timeout_seconds ccstat --quiet monthly -s "$month_start" --json)
+    # Convert YYYYMM01 to YYYY-MM format for ccstat
+    local formatted_month="${month:0:4}-${month:2:2}"
+    output=$(ccusage_run_with_timeout $timeout_seconds ccstat --quiet monthly --since "$formatted_month" --json)
     exit_code=$?
     
     # Use centralized error handler
