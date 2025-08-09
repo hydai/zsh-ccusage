@@ -8,7 +8,7 @@
 # Output: JSON string or error message
 function ccusage_fetch_active_block() {
     # Check if npx is available using centralized function
-    if ! ccusage_check_npx; then
+    if ! ccusage_check_ccstat; then
         return 1
     fi
     
@@ -18,7 +18,7 @@ function ccusage_fetch_active_block() {
     local exit_code
     
     # Run command with timeout to prevent hanging
-    output=$(ccusage_run_with_timeout $timeout_seconds npx ccusage blocks --active --json)
+    output=$(ccusage_run_with_timeout $timeout_seconds ccstat --quiet blocks --active --json)
     exit_code=$?
     
     # Use centralized error handler
@@ -33,7 +33,7 @@ function ccusage_fetch_daily() {
     local date=${1:-$(ccusage_get_today)}
     
     # Check if npx is available using centralized function
-    if ! ccusage_check_npx; then
+    if ! ccusage_check_ccstat; then
         return 1
     fi
     
@@ -43,7 +43,7 @@ function ccusage_fetch_daily() {
     local exit_code
     
     # Run command with timeout to prevent hanging
-    output=$(ccusage_run_with_timeout $timeout_seconds npx ccusage daily -s "$date" --json)
+    output=$(ccusage_run_with_timeout $timeout_seconds ccstat --quiet daily -s "$date" --json)
     exit_code=$?
     
     # Use centralized error handler
@@ -56,7 +56,7 @@ function ccusage_fetch_daily() {
 # Output: JSON string or error message
 function ccusage_fetch_monthly() {
     # Check if npx is available using centralized function
-    if ! ccusage_check_npx; then
+    if ! ccusage_check_ccstat; then
         return 1
     fi
     
@@ -66,7 +66,7 @@ function ccusage_fetch_monthly() {
     local exit_code
     
     # Run command with timeout to prevent hanging
-    output=$(ccusage_run_with_timeout $timeout_seconds npx ccusage monthly --json)
+    output=$(ccusage_run_with_timeout $timeout_seconds ccstat --quiet monthly --json)
     exit_code=$?
     
     # Use centralized error handler
@@ -80,7 +80,7 @@ function ccusage_fetch_daily_cost() {
     local date=${1:-$(ccusage_get_today)}
     
     # Check if npx is available using centralized function
-    if ! ccusage_check_npx; then
+    if ! ccusage_check_ccstat; then
         return 1
     fi
     
@@ -90,7 +90,7 @@ function ccusage_fetch_daily_cost() {
     local exit_code
     
     # Run command with timeout to prevent hanging
-    output=$(ccusage_run_with_timeout $timeout_seconds npx ccusage daily -s "$date" --json)
+    output=$(ccusage_run_with_timeout $timeout_seconds ccstat --quiet daily -s "$date" --json)
     exit_code=$?
     
     # Use centralized error handler
@@ -106,7 +106,7 @@ function ccusage_fetch_monthly_cost() {
     local month_start="${month}01"
     
     # Check if npx is available using centralized function
-    if ! ccusage_check_npx; then
+    if ! ccusage_check_ccstat; then
         return 1
     fi
     
@@ -116,7 +116,7 @@ function ccusage_fetch_monthly_cost() {
     local exit_code
     
     # Run command with timeout to prevent hanging
-    output=$(ccusage_run_with_timeout $timeout_seconds npx ccusage monthly -s "$month_start" --json)
+    output=$(ccusage_run_with_timeout $timeout_seconds ccstat --quiet monthly -s "$month_start" --json)
     exit_code=$?
     
     # Use centralized error handler

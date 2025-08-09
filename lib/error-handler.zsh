@@ -3,14 +3,14 @@
 # Error handler module for zsh-ccusage plugin
 # Provides centralized error handling for all fetch operations
 
-# Check for npx availability
+# Check for ccstat availability
 # Returns:
-#   0 if npx found, 1 if not found
+#   0 if ccstat found, 1 if not found
 # Output:
-#   JSON error message if npx not found
-function ccusage_check_npx() {
-    if ! command -v npx &> /dev/null; then
-        echo '{"error": "npx not found"}'
+#   JSON error message if ccstat not found
+function ccusage_check_ccstat() {
+    if ! command -v ccstat &> /dev/null; then
+        echo '{"error": "ccstat not found"}'
         return 1
     fi
     return 0
@@ -41,8 +41,8 @@ function ccusage_handle_fetch_error() {
             ;;
         *)
             # Other errors - analyze output for specific error types
-            if [[ "$output" =~ "command not found" ]] || [[ "$output" =~ "not found ccusage" ]]; then
-                echo '{"error": "ccusage not installed", "error_type": "not_installed"}'
+            if [[ "$output" =~ "command not found" ]] || [[ "$output" =~ "not found ccstat" ]]; then
+                echo '{"error": "ccstat not installed", "error_type": "not_installed"}'
             elif [[ "$output" =~ "ENOTFOUND" ]] || [[ "$output" =~ "ETIMEDOUT" ]] || [[ "$output" =~ "ECONNREFUSED" ]]; then
                 echo '{"error": "Network error", "error_type": "network"}'
             elif [[ -n "$output" ]]; then

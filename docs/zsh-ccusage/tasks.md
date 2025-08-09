@@ -15,7 +15,7 @@
 
 - [x] 3. Add fetching for active block cost
   - Create functions/ccusage-fetch with ccusage_fetch_active_block
-  - Execute npx ccusage@latest blocks --active --json
+  - Execute ccstat --quiet blocks --active --json
   - Return raw JSON response or error
   - Handle command not found gracefully
   - _Requirements: R1
@@ -120,7 +120,7 @@
 
 - [x] 18. Implement monthly usage fetching
   - Add ccusage_fetch_monthly function in functions/ccusage-fetch
-  - Execute npx ccusage@latest monthly --json
+  - Execute ccstat --quiet monthly --json
   - Cache monthly data separately with 5-minute TTL
   - Handle errors and return cached data when available
   - _Requirements: R6
@@ -197,14 +197,14 @@
 
 - [x] 29. Implement daily cost fetching for cost mode
   - Add ccusage_fetch_daily_cost function
-  - Use npx ccusage@latest -s YYYYMMDD --json
+  - Use ccstat --quiet -s YYYYMMDD --json
   - Auto-generate today's date in YYYYMMDD format
   - Parse total cost from response
   - _Requirements: R9
 
 - [x] 30. Implement monthly cost fetching for cost mode
   - Add ccusage_fetch_monthly_cost function
-  - Use npx ccusage@latest monthly -s YYYYMM01 --json
+  - Use ccstat --quiet monthly -s YYYYMM01 --json
   - Auto-generate current month's first day
   - Parse total cost from response
   - _Requirements: R9

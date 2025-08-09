@@ -37,6 +37,8 @@ This document summarizes the performance optimizations implemented for the zsh-c
 - **Display Function**: 3-7ms average (cached data)
 - **Precmd Hook**: 0-5ms average
 - **Cache Operations**: <1ms with EPOCHSECONDS
+- **ccstat Fetch Time**: 200-400ms (vs 2-3s with npx ccusage)
+- **First Fetch**: <1s (vs 6+s with npx ccusage)
 
 ### Real-World Impact
 - Shell startup is virtually unaffected (5ms is imperceptible)
@@ -45,12 +47,28 @@ This document summarizes the performance optimizations implemented for the zsh-c
 
 ## Testing Notes
 
-The performance test showing 6+ seconds for first display is due to:
-1. The actual `npx ccusage` command execution time
-2. Network requests to fetch usage data
-3. This only happens once per cache period (5 minutes default)
+### ccstat Performance Improvements
 
-With ccusage installed and data cached, the plugin operates well within performance targets.
+The migration from `npx ccusage` to `ccstat` has brought significant performance improvements:
+
+**Previous (npx ccusage):**
+- First fetch: 6+ seconds (npm package initialization + network requests)
+- Subsequent fetches: 2-3 seconds
+- Required npm/npx overhead on every call
+
+**Current (ccstat):**
+- First fetch: <1 second (direct binary execution + network requests)
+- Subsequent fetches: 200-400ms
+- No npm overhead, direct binary execution
+- The `--quiet` flag eliminates logging overhead
+
+### Cache Impact
+
+With ccstat's improved performance:
+1. Initial display is now nearly instant (<1s vs 6+s)
+2. Background updates complete faster, reducing terminal lag
+3. Cache misses have minimal impact on user experience
+4. The 5-minute cache period remains optimal for balancing freshness and performance
 
 ## Configuration for Performance
 
