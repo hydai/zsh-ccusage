@@ -60,7 +60,7 @@ The migration from `npx ccusage` to `ccstat` has brought significant performance
 - First fetch: <1 second (direct binary execution + network requests)
 - Subsequent fetches: 200-400ms
 - No npm overhead, direct binary execution
-- The `--quiet` flag eliminates logging overhead
+- Direct binary execution without npm overhead
 
 ### Cache Impact
 

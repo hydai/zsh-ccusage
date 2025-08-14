@@ -15,7 +15,7 @@
 
 - [x] 3. Add fetching for active block cost
   - Create functions/ccusage-fetch with ccusage_fetch_active_block
-  - Execute ccstat --quiet blocks --active --json
+  - Execute ccstat blocks --active --json
   - Return raw JSON response or error
   - Handle command not found gracefully
   - _Requirements: R1
@@ -120,7 +120,7 @@
 
 - [x] 18. Implement monthly usage fetching
   - Add ccusage_fetch_monthly function in functions/ccusage-fetch
-  - Execute ccstat --quiet monthly --json
+  - Execute ccstat monthly --json
   - Cache monthly data separately with 5-minute TTL
   - Handle errors and return cached data when available
   - _Requirements: R6
@@ -197,14 +197,14 @@
 
 - [x] 29. Implement daily cost fetching for cost mode
   - Add ccusage_fetch_daily_cost function
-  - Use ccstat --quiet -s YYYYMMDD --json
+  - Use ccstat daily --since YYYY-MM-DD --json
   - Auto-generate today's date in YYYYMMDD format
   - Parse total cost from response
   - _Requirements: R9
 
 - [x] 30. Implement monthly cost fetching for cost mode
   - Add ccusage_fetch_monthly_cost function
-  - Use ccstat --quiet monthly -s YYYYMM01 --json
+  - Use ccstat monthly --since YYYY-MM --json
   - Auto-generate current month's first day
   - Parse total cost from response
   - _Requirements: R9

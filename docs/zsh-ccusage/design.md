@@ -74,7 +74,7 @@ graph TD
 # Input: none
 # Output: JSON string or error
 # Behavior: 
-#   - Executes ccstat --quiet blocks --active --json
+#   - Executes ccstat blocks --active --json
 #   - Returns raw JSON response
 #   - Handles command not found gracefully
 function ccusage_fetch_active_block() {
@@ -86,7 +86,7 @@ function ccusage_fetch_active_block() {
 # Input: date in YYYYMMDD format (optional, defaults to today)
 # Output: JSON string or error
 function ccusage_fetch_daily() {
-    # TODO: Execute ccstat --quiet daily -s $date --json
+    # TODO: Execute ccstat daily --since $date --json
     # TODO: Auto-calculate today's date if not provided
 }
 ```

@@ -177,17 +177,17 @@ export CCUSAGE_PERCENTAGE_MODE=monthly
 The `CCUSAGE_COST_MODE` variable controls which cost metric is displayed:
 
 - **`active`** (default): Shows the cost of the current active block
-  - Fetches using: `ccstat --quiet blocks --active --json`
+  - Fetches using: `ccstat blocks --active --json`
   - Display suffix: 'A' (e.g., `$45.23A`)
   - Use case: Monitor cost of current work session
 
 - **`daily`**: Shows today's total cost across all usage
-  - Fetches using: `ccstat --quiet -s YYYYMMDD --json`
+  - Fetches using: `ccstat daily --since YYYY-MM-DD --json`
   - Display suffix: 'D' (e.g., `$20.45D`)
   - Use case: Track daily spending regardless of blocks
 
 - **`monthly`**: Shows current month's total cost
-  - Fetches using: `ccstat --quiet monthly -s YYYYMM01 --json`
+  - Fetches using: `ccstat monthly --since YYYY-MM --json`
   - Display suffix: 'M' (e.g., `$1800.00M`)
   - Use case: Monitor overall monthly spending
 
@@ -473,11 +473,11 @@ Example: `[$45.23A | 85%D]` shows active block cost with daily average percentag
 
 1. Verify ZSH version: `echo $ZSH_VERSION` (should be 5.0+)
 2. Check if plugin is loaded: `echo $plugins` (for Oh My Zsh)
-3. Ensure ccstat CLI is accessible: `ccstat --version`
+3. Ensure ccstat CLI (v0.3.1+) is accessible: `ccstat --version`
 
 ### No cost data showing
 
-1. Check if ccstat is working: `ccstat blocks --active`
+1. Check if ccstat (v0.3.1+) is working: `ccstat blocks --active`
 2. Force refresh: `ccusage-refresh`
 3. Check cache directory permissions: `ls -la $HOME/.cache/zsh-ccusage`
 

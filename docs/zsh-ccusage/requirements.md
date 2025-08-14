@@ -241,23 +241,23 @@ Feature: Configure cost display modes
   Scenario: Display active block cost (default)
     Given CCUSAGE_COST_MODE is not set or set to "active"
     When the prompt is rendered
-    Then it should fetch cost using "ccstat --quiet blocks --active --json"
+    Then it should fetch cost using "ccstat blocks --active --json"
     And display the cost with no suffix indicator
     And cache the result separately from other modes
 
   Scenario: Display daily total cost
     Given I have set CCUSAGE_COST_MODE=daily
     When the prompt is rendered
-    Then it should fetch cost using "ccstat --quiet -s YYYYMMDD --json"
+    Then it should fetch cost using "ccstat daily --since YYYY-MM-DD --json"
     And display the cost with "D" suffix like "$20.45D"
     And use today's date in YYYYMMDD format
 
   Scenario: Display monthly total cost
     Given I have set CCUSAGE_COST_MODE=monthly
     When the prompt is rendered
-    Then it should fetch cost using "ccstat --quiet monthly -s YYYYMM01 --json"
+    Then it should fetch cost using "ccstat monthly --since YYYY-MM --json"
     And display the cost with "M" suffix like "$1800.00M"
-    And use current month's first day in YYYYMM01 format
+    And use current month in YYYY-MM format
 ```
 
 ## 10. Independent Cost and Percentage Modes
@@ -405,9 +405,9 @@ Feature: Handle cost mode API failures
 
 ## Technical Requirements
 
-- Use `ccstat --quiet blocks --active --json` for active block cost
-- Use `ccstat --quiet daily -s YYYYMMDD --json` for daily totals
-- Use `ccstat --quiet monthly --json` for monthly totals
+- Use `ccstat blocks --active --json` for active block cost
+- Use `ccstat daily --since YYYY-MM-DD --json` for daily totals
+- Use `ccstat monthly --since YYYY-MM --json` for monthly totals
 - Cache results to avoid excessive API calls
 - Support standard zsh theming variables
 - Provide configuration through environment variables:
